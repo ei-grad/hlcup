@@ -1,17 +1,18 @@
+.PHONY: clean docker publish
+
 docker: hlcup
 	tar c hlcup | docker import - stor.highloadcup.ru/travels/raccoon_shooter
 
-entities/types_ffjson.go: entities/types.go
-	rm -f entities/types_ffjson.go
+GENERATED = entities/location_cmap.go entities/locationmarks_cmap.go entities/types_ffjson.go entities/user_cmap.go entities/uservisits_cmap.go entities/visit_cmap.go
+
+entities/location_cmap.go: entities/types.go
+	rm -f $(GENERATED)
 	go generate ./entities
-	rm -rf entities/ffjson-*
+	rm -rf ffjson-*
 
-maps/user_cmap.go: maps/maps.go
-	go generate ./maps
+entities/locationmarks_cmap.go entities/types_ffjson.go entities/user_cmap.go entities/uservisits_cmap.go entities/visit_cmap.go: entities/location_cmap.go
 
-maps/location_cmap.go maps/visit_cmap.go: maps/user_cmap.go
-
-hlcup: *.go */*.go entities/types_ffjson.go maps/user_cmap.go maps/location_cmap.go maps/visit_cmap.go
+hlcup: *.go */*.go $(GENERATED)
 	CGO_ENABLED=0 go build -ldflags="-s -w"
 
 run: docker
@@ -21,5 +22,5 @@ publish:
 	docker push stor.highloadcup.ru/travels/raccoon_shooter
 
 clean:
-	go clean
-	rm -rf hlcup entities/ffjson-* entities/types_ffjson.go maps/*_cmap.go
+	go clean ./...
+	rm -rf hlcup entities/ffjson-* $(GENERATED)
