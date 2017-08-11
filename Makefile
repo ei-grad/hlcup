@@ -1,7 +1,7 @@
 .PHONY: clean run docker publish
 
-docker: hlcup
-	tar c hlcup | docker import - stor.highloadcup.ru/travels/raccoon_shooter
+docker: hlcup Dockerfile
+	docker build -t stor.highloadcup.ru/travels/raccoon_shooter .
 
 GENERATED = entities/location_cmap.go entities/locationmarks_cmap.go entities/types_ffjson.go entities/user_cmap.go entities/uservisits_cmap.go entities/visit_cmap.go
 
@@ -16,7 +16,7 @@ hlcup: *.go */*.go $(GENERATED)
 	CGO_ENABLED=0 go build -ldflags="-s -w"
 
 run: docker
-	docker run -it --rm -p 127.0.0.1:8000:80 -v $$PWD/data:/tmp/data stor.highloadcup.ru/travels/raccoon_shooter /hlcup
+	docker run -it --rm -p 127.0.0.1:80:80 -v $$PWD/data:/tmp/data stor.highloadcup.ru/travels/raccoon_shooter /hlcup
 
 publish:
 	docker push stor.highloadcup.ru/travels/raccoon_shooter
