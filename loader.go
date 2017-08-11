@@ -56,64 +56,67 @@ func loadData() {
 			log.Fatalf("Bad start token in %s!", f.Name)
 		}
 
-		// read key
-		token, err = decoder.Token()
-		if err != nil {
-			log.Fatalf("Bad second token in %s!", f.Name)
-		}
-		key, ok := token.(string)
-		if !ok {
-			log.Fatalf("Second token in %s is not string!", f.Name)
-		}
+		for decoder.More() {
 
-		// read left_brace token
-		token, err = decoder.Token()
-		if err != nil {
-			log.Fatalf("Bad start token in %s!", f.Name)
-		}
-		if _, ok := token.(json.Delim); !ok {
-			log.Fatalf("Bad start token in %s!", f.Name)
-		}
+			// read key
+			token, err = decoder.Token()
+			if err != nil {
+				log.Fatalf("Bad second token in %s!", f.Name)
+			}
+			key, ok := token.(string)
+			if !ok {
+				log.Fatalf("Second token in %s is not string!", f.Name)
+			}
 
-		switch key {
-		case "users":
-			for decoder.More() {
-				var v entities.User
-				err := decoder.Decode(&v)
-				if err != nil {
-					log.Fatalf("Bad JSON: %s", err)
-				}
-				body, err := v.MarshalJSON()
-				if err != nil {
-					log.Fatalf("Can't encode %+v back: %s", v, err)
-				}
-				sendPost(fmt.Sprintf("%s/users/new", baseURL), body)
+			// read left_brace token
+			token, err = decoder.Token()
+			if err != nil {
+				log.Fatalf("Bad start token in %s!", f.Name)
 			}
-		case "locations":
-			for decoder.More() {
-				var v entities.Location
-				err := decoder.Decode(&v)
-				if err != nil {
-					log.Fatalf("Bad JSON: %s", err)
-				}
-				body, err := v.MarshalJSON()
-				if err != nil {
-					log.Fatalf("Can't encode %+v back: %s", v, err)
-				}
-				sendPost(fmt.Sprintf("%s/locations/new", baseURL), body)
+			if _, ok := token.(json.Delim); !ok {
+				log.Fatalf("Bad start token in %s!", f.Name)
 			}
-		case "visits":
-			for decoder.More() {
-				var v entities.Visit
-				err := decoder.Decode(&v)
-				if err != nil {
-					log.Fatalf("Bad JSON: %s", err)
+
+			switch key {
+			case "users":
+				for decoder.More() {
+					var v entities.User
+					err := decoder.Decode(&v)
+					if err != nil {
+						log.Fatalf("Bad JSON: %s", err)
+					}
+					body, err := v.MarshalJSON()
+					if err != nil {
+						log.Fatalf("Can't encode %+v back: %s", v, err)
+					}
+					sendPost(fmt.Sprintf("%s/users/new", baseURL), body)
 				}
-				body, err := v.MarshalJSON()
-				if err != nil {
-					log.Fatalf("Can't encode %+v back: %s", v, err)
+			case "locations":
+				for decoder.More() {
+					var v entities.Location
+					err := decoder.Decode(&v)
+					if err != nil {
+						log.Fatalf("Bad JSON: %s", err)
+					}
+					body, err := v.MarshalJSON()
+					if err != nil {
+						log.Fatalf("Can't encode %+v back: %s", v, err)
+					}
+					sendPost(fmt.Sprintf("%s/locations/new", baseURL), body)
 				}
-				sendPost(fmt.Sprintf("%s/visits/new", baseURL), body)
+			case "visits":
+				for decoder.More() {
+					var v entities.Visit
+					err := decoder.Decode(&v)
+					if err != nil {
+						log.Fatalf("Bad JSON: %s", err)
+					}
+					body, err := v.MarshalJSON()
+					if err != nil {
+						log.Fatalf("Can't encode %+v back: %s", v, err)
+					}
+					sendPost(fmt.Sprintf("%s/visits/new", baseURL), body)
+				}
 			}
 		}
 
