@@ -439,7 +439,7 @@ func (j *User) MarshalJSONBuf(buf fflib.EncodingBuffer) error {
 	buf.WriteString(`,"gender":`)
 	fflib.WriteJsonString(buf, string(j.Gender))
 	buf.WriteString(`,"birth_date":`)
-	fflib.WriteJsonString(buf, string(j.BirthDate))
+	fflib.FormatBits2(buf, uint64(j.BirthDate), 10, j.BirthDate < 0)
 	buf.WriteByte('}')
 	return nil
 }
@@ -805,23 +805,27 @@ handle_Gender:
 
 handle_BirthDate:
 
-	/* handler: j.BirthDate type=string kind=string quoted=false*/
+	/* handler: j.BirthDate type=int kind=int quoted=false*/
 
 	{
-
-		{
-			if tok != fflib.FFTok_string && tok != fflib.FFTok_null {
-				return fs.WrapErr(fmt.Errorf("cannot unmarshal %s into Go value for string", tok))
-			}
+		if tok != fflib.FFTok_integer && tok != fflib.FFTok_null {
+			return fs.WrapErr(fmt.Errorf("cannot unmarshal %s into Go value for int", tok))
 		}
+	}
+
+	{
 
 		if tok == fflib.FFTok_null {
 
 		} else {
 
-			outBuf := fs.Output.Bytes()
+			tval, err := fflib.ParseInt(fs.Output.Bytes(), 10, 64)
 
-			j.BirthDate = string(string(outBuf))
+			if err != nil {
+				return fs.WrapErr(err)
+			}
+
+			j.BirthDate = int(tval)
 
 		}
 	}
@@ -878,7 +882,7 @@ func (j *Visit) MarshalJSONBuf(buf fflib.EncodingBuffer) error {
 	buf.WriteString(`,"user":`)
 	fflib.FormatBits2(buf, uint64(j.User), 10, j.User < 0)
 	buf.WriteString(`,"visited_at":`)
-	fflib.WriteJsonString(buf, string(j.VisitedAt))
+	fflib.FormatBits2(buf, uint64(j.VisitedAt), 10, j.VisitedAt < 0)
 	buf.WriteString(`,"Mark":`)
 	fflib.FormatBits2(buf, uint64(j.Mark), 10, false)
 	buf.WriteByte('}')
@@ -1181,23 +1185,27 @@ handle_User:
 
 handle_VisitedAt:
 
-	/* handler: j.VisitedAt type=string kind=string quoted=false*/
+	/* handler: j.VisitedAt type=int kind=int quoted=false*/
 
 	{
-
-		{
-			if tok != fflib.FFTok_string && tok != fflib.FFTok_null {
-				return fs.WrapErr(fmt.Errorf("cannot unmarshal %s into Go value for string", tok))
-			}
+		if tok != fflib.FFTok_integer && tok != fflib.FFTok_null {
+			return fs.WrapErr(fmt.Errorf("cannot unmarshal %s into Go value for int", tok))
 		}
+	}
+
+	{
 
 		if tok == fflib.FFTok_null {
 
 		} else {
 
-			outBuf := fs.Output.Bytes()
+			tval, err := fflib.ParseInt(fs.Output.Bytes(), 10, 64)
 
-			j.VisitedAt = string(string(outBuf))
+			if err != nil {
+				return fs.WrapErr(err)
+			}
+
+			j.VisitedAt = int(tval)
 
 		}
 	}

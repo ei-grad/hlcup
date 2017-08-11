@@ -2,8 +2,11 @@ package main
 
 import (
 	"bytes"
+	"flag"
 	"log"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/pquerna/ffjson/ffjson"
 	"github.com/valyala/fasthttp"
@@ -13,9 +16,20 @@ import (
 )
 
 func main() {
+
+	accessLog := flag.Bool("v", false, "show access log")
+	address := flag.String("b", ":80", "bind address")
+
+	flag.Parse()
+
 	h := requestHandler
-	h = accessLogHandler(h)
-	if err := fasthttp.ListenAndServe(":80", h); err != nil {
+
+	if *accessLog {
+		h = accessLogHandler(h)
+	}
+
+	go loadData()
+	if err := fasthttp.ListenAndServe(*address, h); err != nil {
 		log.Fatalf("Error in ListenAndServe: %s", err)
 	}
 }
@@ -32,18 +46,20 @@ func init() {
 
 func accessLogHandler(handler fasthttp.RequestHandler) fasthttp.RequestHandler {
 	return func(ctx *fasthttp.RequestCtx) {
+		t0 := time.Now()
 		handler(ctx)
 		log.Printf(
-			"%s %s - [%s] \"%s\" %d",
-			ctx.RemoteIP(), ctx.Host(), ctx.Time(),
-			ctx.Request.Header.String(), ctx.Response.StatusCode(),
+			"\"%s\" %d %f",
+			strings.Split(ctx.Request.Header.String(), "\r\n")[0],
+			ctx.Response.StatusCode(),
+			time.Now().Sub(t0).Seconds(),
 		)
 	}
 }
 
 func requestHandler(ctx *fasthttp.RequestCtx) {
 
-	ctx.SetContentType("application/json; charset=utf8")
+	ctx.SetContentType(strApplicationJSON)
 
 	parts := bytes.SplitN(ctx.Path(), []byte("/"), 3)
 
@@ -125,7 +141,7 @@ func requestHandler(ctx *fasthttp.RequestCtx) {
 				ctx.SetStatusCode(404)
 			}
 		} else {
-			// TODO: entity updating
+			ctx.SetStatusCode(404)
 		}
 
 	default:

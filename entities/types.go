@@ -24,7 +24,7 @@ type User struct {
 	// дата рождения, записанная как число секунд от начала UNIX-эпохи по UTC
 	// (другими словами - это timestamp). Ограничено снизу 01.01.1930 и сверху
 	// 01.01.1999-ым.
-	BirthDate string `json:"birth_date"`
+	BirthDate int `json:"birth_date"`
 }
 
 // Location is Достопримечательность
@@ -61,7 +61,7 @@ type Visit struct {
 	User int32 `json:"user"`
 
 	// дата посещения, timestamp с ограничениями: снизу 01.01.2000, а сверху 01.01.2015.
-	VisitedAt string `json:"visited_at"`
+	VisitedAt int `json:"visited_at"`
 
 	// оценка посещения от 0 до 5 включительно. Целое число.
 	Mark uint8
