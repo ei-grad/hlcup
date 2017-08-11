@@ -1,4 +1,4 @@
-.PHONY: clean docker publish
+.PHONY: clean run docker publish
 
 docker: hlcup
 	tar c hlcup | docker import - stor.highloadcup.ru/travels/raccoon_shooter

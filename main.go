@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/allegro/bigcache"
 	"github.com/pquerna/ffjson/ffjson"
 	"github.com/valyala/fasthttp"
 
 	"github.com/ei-grad/hlcup/entities"
-	"github.com/ei-grad/hlcup/maps"
 )
 
 func main() {
@@ -34,14 +34,22 @@ func main() {
 	}
 }
 
-var users *maps.UserMap
-var locations *maps.LocationMap
-var visits *maps.VisitMap
+var users *entities.UserMap
+var locations *entities.LocationMap
+var visits *entities.VisitMap
+
+var cache *bigcache.BigCache
 
 func init() {
-	users = maps.NewUserMap(509)
-	locations = maps.NewLocationMap(509)
-	visits = maps.NewVisitMap(509)
+	users = entities.NewUserMap(509)
+	locations = entities.NewLocationMap(509)
+	visits = entities.NewVisitMap(509)
+
+	var err error
+	cache, err = bigcache.NewBigCache(bigcache.DefaultConfig(10 * time.Minute))
+	if err != nil {
+		log.Fatalf("Can't create bigcache: %s", err)
+	}
 }
 
 func accessLogHandler(handler fasthttp.RequestHandler) fasthttp.RequestHandler {
@@ -65,23 +73,53 @@ func requestHandler(ctx *fasthttp.RequestCtx) {
 
 	switch string(ctx.Method()) {
 
-	case "GET":
+	case strGet:
 		var resp []byte
 		switch len(parts) {
 		case 3:
 			entity := string(parts[1])
-			id := string(parts[2])
+			id, err := strconv.Atoi(string(parts[2]))
+			if err != nil {
+				break
+			}
+			if v, err := cache.Get(string(ctx.Path())); err == nil {
+				resp = v
+				break
+			}
 			switch entity {
 			case strUsers:
-				resp = users.Get(id).JSON
+				v := users.Get(uint32(id))
+				if !v.Valid {
+					break
+				}
+				resp, err = v.MarshalJSON()
 			case strLocations:
-				resp = locations.Get(id).JSON
+				v := locations.Get(uint32(id))
+				if !v.Valid {
+					break
+				}
+				resp, err = v.MarshalJSON()
 			case strVisits:
-				resp = visits.Get(id).JSON
+				v := visits.Get(uint32(id))
+				if !v.Valid {
+					break
+				}
+				resp, err = v.MarshalJSON()
+			}
+			if err != nil {
+				ctx.Logger().Printf(err.Error())
+				ctx.SetStatusCode(500)
+				return
+			}
+			if err = cache.Set(string(ctx.Path()), resp); err != nil {
+				ctx.Logger().Printf(err.Error())
 			}
 		case 4:
 			entity := string(parts[1])
-			//id := string(parts[2])
+			_, err := strconv.Atoi(string(parts[2]))
+			if err != nil {
+				break
+			}
 			tail := string(parts[3])
 			if entity == "users" && tail == "visits" {
 				// TODO: implement /users/<id>/visits
@@ -95,7 +133,7 @@ func requestHandler(ctx *fasthttp.RequestCtx) {
 			ctx.SetStatusCode(404)
 		}
 
-	case "POST":
+	case strPost:
 		if len(parts) != 3 {
 			ctx.SetStatusCode(404)
 		} else if string(parts[2]) == "new" {
@@ -108,11 +146,11 @@ func requestHandler(ctx *fasthttp.RequestCtx) {
 					ctx.SetStatusCode(400)
 					return
 				}
+				v.Validate()
 				// XXX: what if it already exists?
-				users.Set(strconv.Itoa(int(v.ID)), maps.User{
-					Parsed: v,
-					JSON:   body,
-				})
+				bodyCopy := make([]byte, len(body))
+				copy(bodyCopy, body)
+				users.Set(v.ID, v)
 			case strLocations:
 				var v entities.Location
 				body := ctx.PostBody()
@@ -120,11 +158,11 @@ func requestHandler(ctx *fasthttp.RequestCtx) {
 					ctx.SetStatusCode(400)
 					return
 				}
+				v.Validate()
 				// XXX: what if it already exists?
-				locations.Set(strconv.Itoa(int(v.ID)), maps.Location{
-					Parsed: v,
-					JSON:   body,
-				})
+				bodyCopy := make([]byte, len(body))
+				copy(bodyCopy, body)
+				locations.Set(v.ID, v)
 			case strVisits:
 				var v entities.Visit
 				body := ctx.PostBody()
@@ -132,15 +170,22 @@ func requestHandler(ctx *fasthttp.RequestCtx) {
 					ctx.SetStatusCode(400)
 					return
 				}
+				v.Validate()
 				// XXX: what if it already exists?
-				visits.Set(strconv.Itoa(int(v.ID)), maps.Visit{
-					Parsed: v,
-					JSON:   body,
-				})
+				bodyCopy := make([]byte, len(body))
+				copy(bodyCopy, body)
+				visits.Set(v.ID, v)
 			default:
 				ctx.SetStatusCode(404)
 			}
 		} else {
+			// TODO: implement updating
+			//entity := string(parts[1])
+			//id, err := strconv.Atoi(string(parts[2]))
+			//if err != nil {
+			//	ctx.SetStatusCode(404)
+			//	break
+			//}
 			ctx.SetStatusCode(404)
 		}
 

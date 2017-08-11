@@ -1,2 +1,4 @@
 /data
 /hlcup
+*_ffjson.go
+*_cmap.go
