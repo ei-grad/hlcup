@@ -33,7 +33,7 @@ func loadData() {
 	defer r.Close()
 
 	// Wait for a server to start
-	time.Sleep(5 * time.Second)
+	time.Sleep(1 * time.Second)
 
 	t0 := time.Now()
 

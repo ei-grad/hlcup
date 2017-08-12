@@ -34,6 +34,8 @@ func (db *DB) GetVisit(id uint32) models.Visit {
 // AddVisit adds Visit to index
 func (db *DB) AddVisit(v models.Visit) error {
 
+	db.visits.Set(v.ID, v)
+
 	location := db.GetLocation(v.Location)
 	if !location.Valid {
 		return fmt.Errorf("location with id %d doesn't exist", v.Location)
@@ -87,6 +89,20 @@ func (db *DB) AddVisit(v models.Visit) error {
 
 }
 
-func (db *DB) GetLocationMarks(id uint32) []models.LocationMark {
-	return db.locationMarks.Get(id).Marks
+func (db *DB) GetLocationMarks(id uint32) (ret []models.LocationMark) {
+	lm := db.locationMarks.Get(id)
+	if lm != nil {
+		ret = make([]models.LocationMark, len(lm.Marks))
+		copy(ret, lm.Marks)
+	}
+	return
+}
+
+func (db *DB) GetUserVisits(id uint32) (ret []models.UserVisit) {
+	uv := db.userVisits.Get(id)
+	if uv != nil {
+		ret = make([]models.UserVisit, len(uv.Visits))
+		copy(ret, uv.Visits)
+	}
+	return
 }

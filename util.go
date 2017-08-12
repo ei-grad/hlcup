@@ -10,9 +10,9 @@ func accessLogHandler(handler fasthttp.RequestHandler) fasthttp.RequestHandler {
 		t0 := time.Now()
 		handler(ctx)
 		ctx.Logger().Printf(
-			"%d %03.3fms",
+			"%d %s",
 			ctx.Response.StatusCode(),
-			time.Now().Sub(t0).Seconds()/1000.,
+			time.Now().Sub(t0),
 		)
 	}
 }

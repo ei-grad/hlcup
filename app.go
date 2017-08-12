@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"log"
+	"net/http"
 	"strconv"
 	"time"
 
@@ -25,10 +26,34 @@ func NewApplication() Application {
 	var app Application
 
 	var err error
-	app.cache, err = bigcache.NewBigCache(bigcache.DefaultConfig(10 * time.Minute))
+
+	config := bigcache.Config{
+		// number of shards (must be a power of 2)
+		Shards: 1024,
+		// time after which entry can be evicted
+		LifeWindow: 10 * time.Minute,
+		// rps * lifeWindow, used only in initial memory allocation
+		MaxEntriesInWindow: 100 * 10 * 60,
+		// max entry size in bytes, used only in initial memory allocation
+		MaxEntrySize: 500,
+		// prints information about additional memory allocation
+		Verbose: true,
+		// cache will not allocate more memory than this limit, value in MB
+		// if value is reached then the oldest entries can be overridden for the new ones
+		// 0 value means no size limit
+		HardMaxCacheSize: 1024,
+		// callback fired when the oldest entry is removed because of its
+		// expiration time or no space left for the new entry. Default value is nil which
+		// means no callback and it prevents from unwrapping the oldest entry.
+		OnRemove: nil,
+	}
+
+	app.cache, err = bigcache.NewBigCache(config)
 	if err != nil {
 		log.Fatalf("Can't create bigcache: %s", err)
 	}
+
+	log.Printf("Cache initialized.")
 
 	app.db = db.New()
 
@@ -40,69 +65,135 @@ func (app Application) requestHandler(ctx *fasthttp.RequestCtx) {
 
 	ctx.SetContentType(strApplicationJSON)
 
-	parts := bytes.SplitN(ctx.Path(), []byte("/"), 3)
+	parts := bytes.SplitN(ctx.Path(), []byte("/"), 4)
 
 	switch string(ctx.Method()) {
 
 	case strGet:
-		var resp []byte
+
 		switch len(parts) {
 		case 3:
+
+			var resp []byte
+			var id uint32
+
 			entity := string(parts[1])
-			id, err := strconv.Atoi(string(parts[2]))
+
+			id64, err := strconv.ParseUint(string(parts[2]), 10, 32)
 			if err != nil {
-				break
-			}
-			if v, err := app.cache.Get(string(ctx.Path())); err == nil {
-				resp = v
-				break
-			}
-			switch entity {
-			case strUsers:
-				v := app.db.GetUser(uint32(id))
-				if !v.Valid {
-					break
-				}
-				resp, err = v.MarshalJSON()
-			case strLocations:
-				v := app.db.GetLocation(uint32(id))
-				if !v.Valid {
-					break
-				}
-				resp, err = v.MarshalJSON()
-			case strVisits:
-				v := app.db.GetVisit(uint32(id))
-				if !v.Valid {
-					break
-				}
-				resp, err = v.MarshalJSON()
-			}
-			if err != nil {
-				ctx.Logger().Printf(err.Error())
-				ctx.SetStatusCode(500)
+				// 404 - id is not integer
+				ctx.SetStatusCode(http.StatusNotFound)
 				return
 			}
-			if err = app.cache.Set(string(ctx.Path()), resp); err != nil {
-				ctx.Logger().Printf(err.Error())
+			id = uint32(id64)
+
+			if v, err := app.cache.Get(string(ctx.Path())); err == nil {
+				// response from cache
+				ctx.Write(v)
+				return
 			}
-		case 4:
-			entity := string(parts[1])
-			_, err := strconv.Atoi(string(parts[2]))
+
+			switch entity {
+
+			case strUsers:
+				v := app.db.GetUser(id)
+				if !v.Valid {
+					// 404 - user with given ID doesn't exist
+					ctx.SetStatusCode(http.StatusNotFound)
+					return
+				}
+				resp, err = v.MarshalJSON()
+
+			case strLocations:
+				v := app.db.GetLocation(id)
+				if !v.Valid {
+					// 404 - location with given ID doesn't exist
+					ctx.SetStatusCode(http.StatusNotFound)
+					return
+				}
+				resp, err = v.MarshalJSON()
+
+			case strVisits:
+				v := app.db.GetVisit(id)
+				if !v.Valid {
+					// 404 - visit with given ID doesn't exist
+					ctx.SetStatusCode(http.StatusNotFound)
+					return
+				}
+				resp, err = v.MarshalJSON()
+
+			}
+
 			if err != nil {
-				break
+				// ffjson marshal failed, shouldn't happen
+				panic(err)
 			}
-			tail := string(parts[3])
-			if entity == "users" && tail == "visits" {
-				// TODO: implement /users/<id>/visits
-			} else if entity == "locations" && tail == "avg" {
-				// TODO: implement /locations/<id>/avg
-			}
-		}
-		if resp != nil {
+
 			ctx.Write(resp)
-		} else {
-			ctx.SetStatusCode(404)
+
+			if err = app.cache.Set(string(ctx.Path()), resp); err != nil {
+				// bigcache set failed, shouldn't happen
+				panic(err)
+			}
+
+			return
+
+		case 4:
+
+			entity := string(parts[1])
+
+			id64, err := strconv.ParseUint(string(parts[2]), 10, 32)
+			if err != nil {
+				// 404 - id is not integer
+				ctx.SetStatusCode(http.StatusNotFound)
+				return
+			}
+			id := uint32(id64)
+
+			tail := string(parts[3])
+
+			if entity == "users" && tail == "visits" {
+
+				visits := app.db.GetUserVisits(id)
+				if visits == nil {
+					// 404 - user have no visits
+					ctx.SetStatusCode(http.StatusNotFound)
+					return
+				}
+				ctx.WriteString(`{"visits":[`)
+				tmp, _ := visits[0].MarshalJSON()
+				ctx.Write(tmp)
+				for _, i := range visits[1:] {
+					// TODO: implement /users/<id>/visits filters
+					ctx.WriteString(",")
+					tmp, _ = i.MarshalJSON()
+					ctx.Write(tmp)
+				}
+				ctx.WriteString("]}")
+				return
+
+			} else if entity == "locations" && tail == "avg" {
+
+				marks := app.db.GetLocationMarks(id)
+				if marks == nil {
+					// 404 - no marks for specified location
+					ctx.SetStatusCode(http.StatusNotFound)
+					return
+				}
+				var sum, count int
+				for _, i := range marks {
+					// TODO: implement /locations/<id>/avg filters
+					sum = sum + int(i.Mark)
+					count = count + 1
+				}
+				ctx.WriteString(fmt.Sprintf(`{"avg": %.5f}`, float64(sum)/float64(count)))
+				return
+
+			}
+
 		}
+
+		ctx.SetStatusCode(http.StatusNotFound)
 
 	case strPost:
 
@@ -111,20 +202,23 @@ func (app Application) requestHandler(ctx *fasthttp.RequestCtx) {
 		ctx.Write([]byte("{}"))
 
 		if len(parts) != 3 {
-			ctx.SetStatusCode(404)
-		} else if string(parts[2]) == "new" {
+			ctx.SetStatusCode(http.StatusNotFound)
+			return
+		}
+
+		if string(parts[2]) == "new" {
 			entity := string(parts[1])
 			body := ctx.PostBody()
 			switch entity {
 			case strUsers:
 				var v models.User
 				if err := ffjson.Unmarshal(body, &v); err != nil {
-					ctx.SetStatusCode(400)
+					ctx.SetStatusCode(http.StatusBadRequest)
 					ctx.Logger().Printf(err.Error())
 					return
 				}
 				if err := v.Validate(); err != nil {
-					ctx.SetStatusCode(400)
+					ctx.SetStatusCode(http.StatusBadRequest)
 					ctx.Logger().Printf(err.Error())
 					return
 				}
@@ -139,12 +233,12 @@ func (app Application) requestHandler(ctx *fasthttp.RequestCtx) {
 				var v models.Location
 				if err := ffjson.Unmarshal(body, &v); err != nil {
 					ctx.Logger().Printf(err.Error())
-					ctx.SetStatusCode(400)
+					ctx.SetStatusCode(http.StatusBadRequest)
 					return
 				}
 				if err := v.Validate(); err != nil {
 					ctx.Logger().Printf(err.Error())
-					ctx.SetStatusCode(400)
+					ctx.SetStatusCode(http.StatusBadRequest)
 					return
 				}
 				// XXX: what if it already exists?
@@ -157,18 +251,18 @@ func (app Application) requestHandler(ctx *fasthttp.RequestCtx) {
 			case strVisits:
 				var v models.Visit
 				if err := ffjson.Unmarshal(body, &v); err != nil {
-					ctx.SetStatusCode(400)
+					ctx.SetStatusCode(http.StatusBadRequest)
 					ctx.Logger().Printf(err.Error())
 					return
 				}
 				if err := v.Validate(); err != nil {
-					ctx.SetStatusCode(400)
+					ctx.SetStatusCode(http.StatusBadRequest)
 					ctx.Logger().Printf(err.Error())
 					return
 				}
 				// XXX: what if it already exists?
 				if err := app.db.AddVisit(v); err != nil {
-					ctx.SetStatusCode(400)
+					ctx.SetStatusCode(http.StatusBadRequest)
 					ctx.Logger().Printf(err.Error())
 					return
 				}
@@ -178,23 +272,17 @@ func (app Application) requestHandler(ctx *fasthttp.RequestCtx) {
 					ctx.Logger().Printf(err.Error())
 				}
 			default:
-				ctx.SetStatusCode(404)
+				ctx.SetStatusCode(http.StatusNotFound)
 			}
 		} else {
 			// TODO: implement updating
-			//entity := string(parts[1])
-			//id, err := strconv.Atoi(string(parts[2]))
-			//if err != nil {
-			//	ctx.SetStatusCode(404)
-			//	break
-			//}
-			ctx.SetStatusCode(404)
+			ctx.SetStatusCode(http.StatusNotFound)
+			return
 		}
 
 	default:
-		ctx.SetStatusCode(405)
+		ctx.SetStatusCode(http.StatusMethodNotAllowed)
+		return
 	}
-
-	//fmt.Fprintf(ctx, "Query string is %q\n", ctx.QueryArgs())
 
 }

@@ -3,3 +3,4 @@
 *_ffjson.go
 *_cmap.go
 /docker
+/debug

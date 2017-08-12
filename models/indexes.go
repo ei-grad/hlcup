@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+//go:generate ffjson $GOFILE
+
 // LocationMark contains info needed to implement filters:
 //    fromDate - учитывать оценки только с visited_at > fromDate
 //    toDate - учитывать оценки только с visited_at < toDate
