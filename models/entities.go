@@ -20,7 +20,7 @@ type User struct {
 	LastName  string `json:"last_name"`
 
 	// unicode-строка "m" означает мужчской пол, а "f" - женский.
-	Gender byte `json:"gender"`
+	Gender string `json:"gender"`
 
 	// дата рождения, записанная как число секунд от начала UNIX-эпохи по UTC
 	// (другими словами - это timestamp). Ограничено снизу 01.01.1930 и сверху
