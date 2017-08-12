@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -287,37 +286,61 @@ func (app Application) RequestHandler(ctx *fasthttp.RequestCtx) {
 			id := uint32(id64)
 
 			var v interface {
+				Validate() error
 				IsValid() bool
 			}
 
+			var user models.User
+			var location models.Location
+			var visit models.Visit
+
 			switch entity {
 			case strUsers:
-				user := app.db.GetUser(id)
+				user = app.db.GetUser(id)
 				v = &user
 			case strLocations:
-				location := app.db.GetLocation(id)
+				location = app.db.GetLocation(id)
 				v = &location
 			case strVisits:
-				visit := app.db.GetVisit(id)
+				visit = app.db.GetVisit(id)
 				v = &visit
 			default:
 				ctx.SetStatusCode(http.StatusNotFound)
 				return
 			}
 
+			// check that entity already exist
 			if !v.IsValid() {
 				ctx.SetStatusCode(http.StatusNotFound)
 				return
 			}
 
-			m := map[string]interface{}{}
+			switch entity {
+			case strUsers:
+				err = user.UnmarshalJSON(body)
+			case strLocations:
+				err = location.UnmarshalJSON(body)
+			case strVisits:
+				err = visit.UnmarshalJSON(body)
+			}
 
-			if err := json.Unmarshal(body, &m); err != nil {
+			if err == nil {
+				err = v.Validate()
+			}
+
+			if err != nil {
 				ctx.SetStatusCode(http.StatusBadRequest)
 				return
 			}
 
-			// TODO: update entity
+			switch entity {
+			case strUsers:
+				app.db.UpdateUser(user)
+			case strLocations:
+				app.db.UpdateLocation(location)
+			case strVisits:
+				app.db.UpdateVisit(visit)
+			}
 
 		}
 
