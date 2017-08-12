@@ -3,3 +3,4 @@ data
 Dockerfile
 Makefile
 **.go
+docker

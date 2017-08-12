@@ -8,17 +8,12 @@ import (
 	"os"
 	"time"
 
-	"sync"
-
 	"github.com/valyala/fasthttp"
 
 	"github.com/ei-grad/hlcup/models"
 )
 
 func loadData() {
-
-	// Wait for a server to start
-	time.Sleep(5)
 
 	baseURL := os.Getenv("BASE_URL")
 	if baseURL == "" {
@@ -37,24 +32,25 @@ func loadData() {
 	}
 	defer r.Close()
 
-	var wg sync.WaitGroup
+	// Wait for a server to start
+	time.Sleep(5 * time.Second)
+
+	t0 := time.Now()
 
 	// Iterate through the files in the archive,
 	// printing some of their contents.
 	for _, f := range r.File {
-		wg.Add(1)
-		go loadFile(&wg, baseURL, f)
+		loadFile(baseURL, f)
 	}
 
-	wg.Wait()
+	log.Printf("Load finished in %s", time.Now().Sub(t0))
 
 }
 
-func loadFile(wg *sync.WaitGroup, baseURL string, f *zip.File) {
-
-	defer wg.Done()
+func loadFile(baseURL string, f *zip.File) {
 
 	log.Printf("Loading %s...", f.Name)
+
 	rc, err := f.Open()
 	if err != nil {
 		log.Fatal(err)

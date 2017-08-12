@@ -43,7 +43,3 @@ func (db *DB) GetLocation(id uint32) models.Location {
 func (db *DB) AddLocation(v models.Location) {
 	db.locations.Set(v.ID, v)
 }
-
-func (db *DB) GetVisit(id uint32) models.Visit {
-	return db.visits.Get(id)
-}

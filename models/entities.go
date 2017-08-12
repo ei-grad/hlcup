@@ -25,7 +25,7 @@ type User struct {
 	// дата рождения, записанная как число секунд от начала UNIX-эпохи по UTC
 	// (другими словами - это timestamp). Ограничено снизу 01.01.1930 и сверху
 	// 01.01.1999-ым.
-	BirthDate int `json:"birth_date"`
+	BirthDate int64 `json:"birth_date"`
 
 	Valid bool `json:"-"`
 }
