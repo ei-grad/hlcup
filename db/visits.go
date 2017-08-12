@@ -82,7 +82,7 @@ func (db *DB) AddVisit(v models.Visit) error {
 	uv.Visits = append(uv.Visits, models.UserVisit{
 		Mark:      v.Mark,
 		VisitedAt: v.VisitedAt,
-		Place:     location.City,
+		Place:     location.Place,
 		VisitID:   v.ID,
 		Country:   location.Country,
 		Distance:  location.Distance,
@@ -96,6 +96,8 @@ func (db *DB) AddVisit(v models.Visit) error {
 func (db *DB) GetLocationMarks(id uint32) (ret []models.LocationMark) {
 	lm := db.locationMarks.Get(id)
 	if lm != nil {
+		lm.M.RLock()
+		defer lm.M.RUnlock()
 		ret = make([]models.LocationMark, len(lm.Marks))
 		copy(ret, lm.Marks)
 	}
@@ -105,6 +107,8 @@ func (db *DB) GetLocationMarks(id uint32) (ret []models.LocationMark) {
 func (db *DB) GetUserVisits(id uint32) (ret []models.UserVisit) {
 	uv := db.userVisits.Get(id)
 	if uv != nil {
+		uv.M.RLock()
+		defer uv.M.RUnlock()
 		ret = make([]models.UserVisit, len(uv.Visits))
 		copy(ret, uv.Visits)
 	}
