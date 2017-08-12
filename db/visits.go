@@ -50,7 +50,7 @@ func (db *DB) AddVisit(v models.Visit) error {
 	if lm == nil {
 		t, _ := db.locationSF.Do(strconv.Itoa(int(v.Location)), func() (interface{}, error) {
 			ret := &models.LocationMarks{}
-			db.locationMarks.Set(v.User, ret)
+			db.locationMarks.Set(v.Location, ret)
 			return ret, nil
 		})
 		lm, _ = t.(*models.LocationMarks)
