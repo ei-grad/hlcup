@@ -119,7 +119,7 @@ func (l *Loader) loadFile(f *zip.File, stage int) {
 			}
 		case strVisits:
 			if stage == 2 {
-				constructor = func() Entity { return &models.Location{} }
+				constructor = func() Entity { return &models.Visit{} }
 			}
 		}
 

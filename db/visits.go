@@ -2,6 +2,7 @@ package db
 
 import (
 	"fmt"
+	"log"
 	"sort"
 	"strconv"
 	"time"
@@ -38,6 +39,8 @@ func (db *DB) AddVisit(v models.Visit) error {
 
 	location := db.GetLocation(v.Location)
 	if !location.Valid {
+		log.Printf("location: %+v", location)
+		log.Printf("visit: %+v", v)
 		return fmt.Errorf("location with id %d doesn't exist", v.Location)
 	}
 

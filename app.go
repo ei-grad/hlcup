@@ -146,8 +146,11 @@ func (app Application) requestHandler(ctx *fasthttp.RequestCtx) {
 
 	case strPost:
 
-		// just {} response for POST requests, and Connection:close, yeah
+		// To fix the "Empty response" error in yandex-tank logs we have to send
+		// "Connection: close" for POST requests.
 		ctx.SetConnectionClose()
+
+		// Also, check system expects a {} in the response body
 		ctx.Write([]byte("{}"))
 
 		if len(parts) != 3 {
@@ -163,6 +166,7 @@ func (app Application) requestHandler(ctx *fasthttp.RequestCtx) {
 			UnmarshalJSON([]byte) error
 			Validate() error
 		}
+
 		var saver func() error
 
 		if string(parts[2]) == "new" {
@@ -197,11 +201,10 @@ func (app Application) requestHandler(ctx *fasthttp.RequestCtx) {
 			}
 			if err := saver(); err != nil {
 				ctx.SetStatusCode(http.StatusBadRequest)
-				ctx.Logger().Printf(err.Error())
+				ctx.Logger().Printf("can't add %+v: %s\n%s", v, err.Error(), body)
 				return
 			}
-			bodyCopy := make([]byte, len(body))
-			copy(bodyCopy, body)
+
 		} else {
 			// TODO: implement updating
 			ctx.SetStatusCode(http.StatusNotFound)
