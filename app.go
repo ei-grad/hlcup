@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -308,6 +309,15 @@ func (app Application) RequestHandler(ctx *fasthttp.RequestCtx) {
 				ctx.SetStatusCode(http.StatusNotFound)
 				return
 			}
+
+			m := map[string]interface{}{}
+
+			if err := json.Unmarshal(body, &m); err != nil {
+				ctx.SetStatusCode(http.StatusBadRequest)
+				return
+			}
+
+			// TODO: update entity
 
 		}
 
