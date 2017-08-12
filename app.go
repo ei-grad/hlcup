@@ -107,7 +107,6 @@ func (app Application) requestHandler(ctx *fasthttp.RequestCtx) {
 				filter, err := GetVisitsFilter(ctx.QueryArgs())
 				if err != nil {
 					ctx.SetStatusCode(http.StatusBadRequest)
-					ctx.Logger().Printf(err.Error())
 					return
 				}
 
@@ -146,7 +145,6 @@ func (app Application) requestHandler(ctx *fasthttp.RequestCtx) {
 				filter, err := GetMarksFilter(ctx.QueryArgs())
 				if err != nil {
 					ctx.SetStatusCode(http.StatusBadRequest)
-					ctx.Logger().Printf(err.Error())
 					return
 				}
 
