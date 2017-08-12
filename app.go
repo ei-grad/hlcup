@@ -3,12 +3,9 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
-	"time"
 
-	"github.com/allegro/bigcache"
 	"github.com/pquerna/ffjson/ffjson"
 	"github.com/valyala/fasthttp"
 
@@ -17,48 +14,12 @@ import (
 )
 
 type Application struct {
-	cache *bigcache.BigCache
-	db    *db.DB
+	db *db.DB
 }
 
-func NewApplication() Application {
-
-	var app Application
-
-	var err error
-
-	config := bigcache.Config{
-		// number of shards (must be a power of 2)
-		Shards: 1024,
-		// time after which entry can be evicted
-		LifeWindow: 10 * time.Minute,
-		// rps * lifeWindow, used only in initial memory allocation
-		MaxEntriesInWindow: 100 * 10 * 60,
-		// max entry size in bytes, used only in initial memory allocation
-		MaxEntrySize: 500,
-		// prints information about additional memory allocation
-		Verbose: true,
-		// cache will not allocate more memory than this limit, value in MB
-		// if value is reached then the oldest entries can be overridden for the new ones
-		// 0 value means no size limit
-		HardMaxCacheSize: 1024,
-		// callback fired when the oldest entry is removed because of its
-		// expiration time or no space left for the new entry. Default value is nil which
-		// means no callback and it prevents from unwrapping the oldest entry.
-		OnRemove: nil,
-	}
-
-	app.cache, err = bigcache.NewBigCache(config)
-	if err != nil {
-		log.Fatalf("Can't create bigcache: %s", err)
-	}
-
-	log.Printf("Cache initialized.")
-
+func NewApplication() (app Application) {
 	app.db = db.New()
-
-	return app
-
+	return
 }
 
 func (app Application) requestHandler(ctx *fasthttp.RequestCtx) {
@@ -86,12 +47,6 @@ func (app Application) requestHandler(ctx *fasthttp.RequestCtx) {
 				return
 			}
 			id = uint32(id64)
-
-			if v, err := app.cache.Get(string(ctx.Path())); err == nil {
-				// response from cache
-				ctx.Write(v)
-				return
-			}
 
 			switch entity {
 
@@ -130,11 +85,6 @@ func (app Application) requestHandler(ctx *fasthttp.RequestCtx) {
 			}
 
 			ctx.Write(resp)
-
-			if err = app.cache.Set(string(ctx.Path()), resp); err != nil {
-				// bigcache set failed, shouldn't happen
-				panic(err)
-			}
 
 			return
 
@@ -226,9 +176,6 @@ func (app Application) requestHandler(ctx *fasthttp.RequestCtx) {
 				bodyCopy := make([]byte, len(body))
 				copy(bodyCopy, body)
 				app.db.AddUser(v)
-				if err := app.cache.Set(fmt.Sprintf("/users/%d", v.ID), bodyCopy); err != nil {
-					ctx.Logger().Printf(err.Error())
-				}
 			case strLocations:
 				var v models.Location
 				if err := ffjson.Unmarshal(body, &v); err != nil {
@@ -245,9 +192,6 @@ func (app Application) requestHandler(ctx *fasthttp.RequestCtx) {
 				bodyCopy := make([]byte, len(body))
 				copy(bodyCopy, body)
 				app.db.AddLocation(v)
-				if err := app.cache.Set(fmt.Sprintf("/locations/%d", v.ID), bodyCopy); err != nil {
-					ctx.Logger().Printf(err.Error())
-				}
 			case strVisits:
 				var v models.Visit
 				if err := ffjson.Unmarshal(body, &v); err != nil {
@@ -268,9 +212,6 @@ func (app Application) requestHandler(ctx *fasthttp.RequestCtx) {
 				}
 				bodyCopy := make([]byte, len(body))
 				copy(bodyCopy, body)
-				if err := app.cache.Set(fmt.Sprintf("/visits/%d", v.ID), bodyCopy); err != nil {
-					ctx.Logger().Printf(err.Error())
-				}
 			default:
 				ctx.SetStatusCode(http.StatusNotFound)
 			}
