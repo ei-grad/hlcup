@@ -12,16 +12,20 @@ import (
 	"github.com/ei-grad/hlcup/models"
 )
 
+// Application implements application logic
 type Application struct {
 	db *db.DB
 }
 
+// NewApplication creates new Application
 func NewApplication() (app Application) {
 	app.db = db.New()
 	return
 }
 
-func (app Application) requestHandler(ctx *fasthttp.RequestCtx) {
+// RequestHandler contains implementation of all routes and most of application
+// logic
+func (app Application) RequestHandler(ctx *fasthttp.RequestCtx) {
 
 	ctx.SetContentType(strApplicationJSON)
 
@@ -53,7 +57,6 @@ func (app Application) requestHandler(ctx *fasthttp.RequestCtx) {
 			id = uint32(id64)
 
 			switch entity {
-
 			case strUsers:
 				user := app.db.GetUser(id)
 				v = &user
@@ -63,6 +66,9 @@ func (app Application) requestHandler(ctx *fasthttp.RequestCtx) {
 			case strVisits:
 				visit := app.db.GetVisit(id)
 				v = &visit
+			default:
+				ctx.SetStatusCode(http.StatusNotFound)
+				return
 			}
 
 			if !v.IsValid() {
@@ -150,23 +156,54 @@ func (app Application) requestHandler(ctx *fasthttp.RequestCtx) {
 					return
 				}
 
-				marks := app.db.GetLocationMarks(id)
 				var sum, count int
-				marks.M.RLock()
-				for _, i := range marks.Marks {
-					if !filter(i) {
-						continue
+				var avg float64
+
+				marks := app.db.GetLocationMarks(id)
+				if marks != nil {
+					marks.M.RLock()
+					for _, i := range marks.Marks {
+						if !filter(i) {
+							continue
+						}
+						sum = sum + int(i.Mark)
+						count = count + 1
 					}
-					sum = sum + int(i.Mark)
-					count = count + 1
+					marks.M.RUnlock()
 				}
-				marks.M.RUnlock()
 				if count == 0 {
 					// location have no marks
-					ctx.WriteString(`{"avg":0}`)
+					avg = 0.
+				} else {
+					avg = float64(sum) / float64(count)
+				}
+				ctx.WriteString(fmt.Sprintf(`{"avg": %.5f}`, avg))
+				return
+
+			case entity == "locations" && tail == "marks":
+
+				if !app.db.GetLocation(id).IsValid() {
+					ctx.SetStatusCode(http.StatusNotFound)
 					return
 				}
-				ctx.WriteString(fmt.Sprintf(`{"avg": %.5f}`, float64(sum)/float64(count)))
+
+				first := true
+
+				ctx.WriteString(`{"marks":[`)
+				marks := app.db.GetLocationMarks(id)
+				if marks != nil {
+					marks.M.RLock()
+					for _, i := range marks.Marks {
+						if !first {
+							ctx.WriteString(",")
+						}
+						tmp, _ := i.MarshalJSON()
+						ctx.Write(tmp)
+						first = false
+					}
+				}
+				marks.M.RUnlock()
+				ctx.WriteString("]}")
 				return
 
 			default:
@@ -200,9 +237,9 @@ func (app Application) requestHandler(ctx *fasthttp.RequestCtx) {
 			Validate() error
 		}
 
-		var saver func() error
-
 		if string(parts[2]) == "new" {
+
+			var saver func() error
 
 			switch entity {
 			case strUsers:
@@ -239,9 +276,39 @@ func (app Application) requestHandler(ctx *fasthttp.RequestCtx) {
 			}
 
 		} else {
-			// TODO: implement updating
-			ctx.SetStatusCode(http.StatusNotFound)
-			return
+
+			id64, err := strconv.ParseUint(string(parts[2]), 10, 32)
+			if err != nil {
+				// 404 - id is not integer
+				ctx.SetStatusCode(http.StatusNotFound)
+				return
+			}
+			id := uint32(id64)
+
+			var v interface {
+				IsValid() bool
+			}
+
+			switch entity {
+			case strUsers:
+				user := app.db.GetUser(id)
+				v = &user
+			case strLocations:
+				location := app.db.GetLocation(id)
+				v = &location
+			case strVisits:
+				visit := app.db.GetVisit(id)
+				v = &visit
+			default:
+				ctx.SetStatusCode(http.StatusNotFound)
+				return
+			}
+
+			if !v.IsValid() {
+				ctx.SetStatusCode(http.StatusNotFound)
+				return
+			}
+
 		}
 
 	default:

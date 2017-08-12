@@ -12,7 +12,7 @@ func accessLogHandler(handler fasthttp.RequestHandler) fasthttp.RequestHandler {
 		ctx.Logger().Printf(
 			"%d %s",
 			ctx.Response.StatusCode(),
-			time.Now().Sub(t0),
+			time.Since(t0),
 		)
 	}
 }

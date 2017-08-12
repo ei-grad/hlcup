@@ -43,4 +43,4 @@ clean:
 	rm -rf hlcup $(GENERATED)
 
 watch: $(GENERATED)
-	iwatch "go build -o debug && ./debug -b :8000 -url http://127.0.0.1:8000 -data data/data.zip -v"
+	iwatch "go build -race -o debug && ./debug -b :8000 -url http://127.0.0.1:8000 -data data/data.zip -v"

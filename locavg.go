@@ -96,7 +96,7 @@ func filterLocationMarkFromDate(t int) LocationMarkFilter {
 
 func filterLocationMarkToDate(t int) LocationMarkFilter {
 	return func(v models.LocationMark) bool {
-		return v.VisitedAt > t
+		return v.VisitedAt < t
 	}
 }
 

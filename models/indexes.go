@@ -13,7 +13,6 @@ import (
 //    fromAge - учитывать только путешественников, у которых возраст (считается от текущего timestamp) больше этого параметра
 //    toAge - как предыдущее, но наоборот
 //    gender - учитывать оценки только мужчин или женщин
-//ffjson:skip
 type LocationMark struct {
 	VisitID   uint32
 	VisitedAt int

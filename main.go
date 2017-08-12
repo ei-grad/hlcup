@@ -18,7 +18,7 @@ func main() {
 
 	app := NewApplication()
 
-	h := app.requestHandler
+	h := app.RequestHandler
 
 	if *accessLog {
 		h = accessLogHandler(h)
