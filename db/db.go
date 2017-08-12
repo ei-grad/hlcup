@@ -32,14 +32,16 @@ func (db *DB) GetUser(id uint32) models.User {
 	return db.users.Get(id)
 }
 
-func (db *DB) AddUser(v models.User) {
+func (db *DB) AddUser(v models.User) error {
 	db.users.Set(v.ID, v)
+	return nil
 }
 
 func (db *DB) GetLocation(id uint32) models.Location {
 	return db.locations.Get(id)
 }
 
-func (db *DB) AddLocation(v models.Location) {
+func (db *DB) AddLocation(v models.Location) error {
 	db.locations.Set(v.ID, v)
+	return nil
 }

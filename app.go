@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/pquerna/ffjson/ffjson"
 	"github.com/valyala/fasthttp"
 
 	"github.com/ei-grad/hlcup/db"
@@ -32,6 +31,11 @@ func (app Application) requestHandler(ctx *fasthttp.RequestCtx) {
 
 	case strGet:
 
+		var v interface {
+			IsValid() bool
+			MarshalJSON() ([]byte, error)
+		}
+
 		switch len(parts) {
 		case 3:
 
@@ -51,34 +55,23 @@ func (app Application) requestHandler(ctx *fasthttp.RequestCtx) {
 			switch entity {
 
 			case strUsers:
-				v := app.db.GetUser(id)
-				if !v.Valid {
-					// 404 - user with given ID doesn't exist
-					ctx.SetStatusCode(http.StatusNotFound)
-					return
-				}
-				resp, err = v.MarshalJSON()
-
+				user := app.db.GetUser(id)
+				v = &user
 			case strLocations:
-				v := app.db.GetLocation(id)
-				if !v.Valid {
-					// 404 - location with given ID doesn't exist
-					ctx.SetStatusCode(http.StatusNotFound)
-					return
-				}
-				resp, err = v.MarshalJSON()
-
+				location := app.db.GetLocation(id)
+				v = &location
 			case strVisits:
-				v := app.db.GetVisit(id)
-				if !v.Valid {
-					// 404 - visit with given ID doesn't exist
-					ctx.SetStatusCode(http.StatusNotFound)
-					return
-				}
-				resp, err = v.MarshalJSON()
-
+				visit := app.db.GetVisit(id)
+				v = &visit
 			}
 
+			if !v.IsValid() {
+				// 404 - user with given ID doesn't exist
+				ctx.SetStatusCode(http.StatusNotFound)
+				return
+			}
+
+			resp, err = v.MarshalJSON()
 			if err != nil {
 				// v.MarshalJSON() failed, shouldn't happen
 				panic(err)
@@ -102,7 +95,9 @@ func (app Application) requestHandler(ctx *fasthttp.RequestCtx) {
 
 			tail := string(parts[3])
 
-			if entity == "users" && tail == "visits" {
+			switch {
+
+			case entity == "users" && tail == "visits":
 
 				visits := app.db.GetUserVisits(id)
 				if visits == nil {
@@ -123,7 +118,7 @@ func (app Application) requestHandler(ctx *fasthttp.RequestCtx) {
 				ctx.WriteString("]}")
 				return
 
-			} else if entity == "locations" && tail == "avg" {
+			case entity == "locations" && tail == "avg":
 
 				marks := app.db.GetLocationMarks(id)
 				if marks == nil {
@@ -141,11 +136,13 @@ func (app Application) requestHandler(ctx *fasthttp.RequestCtx) {
 				ctx.WriteString(fmt.Sprintf(`{"avg": %.5f}`, float64(sum)/float64(count)))
 				return
 
+			default:
+				ctx.SetStatusCode(http.StatusNotFound)
+				return
+
 			}
 
 		}
-
-		ctx.SetStatusCode(http.StatusNotFound)
 
 	case strPost:
 
@@ -162,63 +159,49 @@ func (app Application) requestHandler(ctx *fasthttp.RequestCtx) {
 
 		body := ctx.PostBody()
 
+		var v interface {
+			UnmarshalJSON([]byte) error
+			Validate() error
+		}
+		var saver func() error
+
 		if string(parts[2]) == "new" {
+
 			switch entity {
 			case strUsers:
-				var v models.User
-				if err := ffjson.Unmarshal(body, &v); err != nil {
-					ctx.SetStatusCode(http.StatusBadRequest)
-					ctx.Logger().Printf(err.Error())
-					return
-				}
-				if err := v.Validate(); err != nil {
-					ctx.SetStatusCode(http.StatusBadRequest)
-					ctx.Logger().Printf(err.Error())
-					return
-				}
-				// XXX: what if it already exists?
-				bodyCopy := make([]byte, len(body))
-				copy(bodyCopy, body)
-				app.db.AddUser(v)
+				var user models.User
+				v = &user
+				saver = func() error { return app.db.AddUser(user) }
 			case strLocations:
-				var v models.Location
-				if err := ffjson.Unmarshal(body, &v); err != nil {
-					ctx.Logger().Printf(err.Error())
-					ctx.SetStatusCode(http.StatusBadRequest)
-					return
-				}
-				if err := v.Validate(); err != nil {
-					ctx.Logger().Printf(err.Error())
-					ctx.SetStatusCode(http.StatusBadRequest)
-					return
-				}
-				// XXX: what if it already exists?
-				bodyCopy := make([]byte, len(body))
-				copy(bodyCopy, body)
-				app.db.AddLocation(v)
+				var location models.Location
+				v = &location
+				saver = func() error { return app.db.AddLocation(location) }
 			case strVisits:
-				var v models.Visit
-				if err := ffjson.Unmarshal(body, &v); err != nil {
-					ctx.SetStatusCode(http.StatusBadRequest)
-					ctx.Logger().Printf(err.Error())
-					return
-				}
-				if err := v.Validate(); err != nil {
-					ctx.SetStatusCode(http.StatusBadRequest)
-					ctx.Logger().Printf(err.Error())
-					return
-				}
-				// XXX: what if it already exists?
-				if err := app.db.AddVisit(v); err != nil {
-					ctx.SetStatusCode(http.StatusBadRequest)
-					ctx.Logger().Printf(err.Error())
-					return
-				}
-				bodyCopy := make([]byte, len(body))
-				copy(bodyCopy, body)
+				var visit models.Visit
+				v = &visit
+				saver = func() error { return app.db.AddVisit(visit) }
 			default:
 				ctx.SetStatusCode(http.StatusNotFound)
+				return
 			}
+
+			if err := v.UnmarshalJSON(body); err != nil {
+				ctx.SetStatusCode(http.StatusBadRequest)
+				ctx.Logger().Printf(err.Error())
+				return
+			}
+			if err := v.Validate(); err != nil {
+				ctx.SetStatusCode(http.StatusBadRequest)
+				ctx.Logger().Printf("validate failed: %s", err.Error())
+				return
+			}
+			if err := saver(); err != nil {
+				ctx.SetStatusCode(http.StatusBadRequest)
+				ctx.Logger().Printf(err.Error())
+				return
+			}
+			bodyCopy := make([]byte, len(body))
+			copy(bodyCopy, body)
 		} else {
 			// TODO: implement updating
 			ctx.SetStatusCode(http.StatusNotFound)

@@ -35,6 +35,10 @@ func (v *User) Validate() error {
 	return nil
 }
 
+func (v *User) IsValid() bool {
+	return v.Valid
+}
+
 // Location is Достопримечательность
 //go:generate cmap-gen -package models -type Location -key uint32
 type Location struct {
@@ -63,6 +67,10 @@ func (v *Location) Validate() error {
 	return nil
 }
 
+func (v *Location) IsValid() bool {
+	return v.Valid
+}
+
 // Visit is Посещение
 //go:generate cmap-gen -package models -type Visit -key uint32
 type Visit struct {
@@ -89,4 +97,8 @@ type Visit struct {
 func (v *Visit) Validate() error {
 	v.Valid = true
 	return nil
+}
+
+func (v *Visit) IsValid() bool {
+	return v.Valid
 }

@@ -33,7 +33,7 @@ hlcup: *.go */*.go $(GENERATED)
 	CGO_ENABLED=0 go build -ldflags="-s -w"
 
 run: docker
-	docker run -it --rm -p 127.0.0.1:80:80 -v $$PWD/data:/tmp/data stor.highloadcup.ru/travels/raccoon_shooter ./hlcup
+	docker run -it --rm -p 127.0.0.1:80:80 -v $$PWD/data:/tmp/data stor.highloadcup.ru/travels/raccoon_shooter ./hlcup $(ARGS)
 
 publish:
 	docker push stor.highloadcup.ru/travels/raccoon_shooter
