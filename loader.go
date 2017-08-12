@@ -12,7 +12,7 @@ import (
 
 	"github.com/valyala/fasthttp"
 
-	"github.com/ei-grad/hlcup/entities"
+	"github.com/ei-grad/hlcup/models"
 )
 
 func loadData() {
@@ -96,7 +96,7 @@ func loadFile(wg *sync.WaitGroup, baseURL string, f *zip.File) {
 		switch key {
 		case "users":
 			for decoder.More() {
-				var v entities.User
+				var v models.User
 				err := decoder.Decode(&v)
 				if err != nil {
 					log.Fatalf("Bad JSON: %s", err)
@@ -109,7 +109,7 @@ func loadFile(wg *sync.WaitGroup, baseURL string, f *zip.File) {
 			}
 		case "locations":
 			for decoder.More() {
-				var v entities.Location
+				var v models.Location
 				err := decoder.Decode(&v)
 				if err != nil {
 					log.Fatalf("Bad JSON: %s", err)
@@ -122,7 +122,7 @@ func loadFile(wg *sync.WaitGroup, baseURL string, f *zip.File) {
 			}
 		case "visits":
 			for decoder.More() {
-				var v entities.Visit
+				var v models.Visit
 				err := decoder.Decode(&v)
 				if err != nil {
 					log.Fatalf("Bad JSON: %s", err)

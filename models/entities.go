@@ -1,11 +1,9 @@
-package entities
+package models
 
 //go:generate ffjson $GOFILE
 
-import "sync"
-
 // User is user profile
-//go:generate cmap-gen -package entities -type User -key uint32
+//go:generate cmap-gen -package models -type User -key uint32
 type User struct {
 
 	// уникальный внешний идентификатор пользователя. Устанавливается
@@ -32,12 +30,13 @@ type User struct {
 	Valid bool `json:"-"`
 }
 
-func (v *User) Validate() {
+func (v *User) Validate() error {
 	v.Valid = true
+	return nil
 }
 
 // Location is Достопримечательность
-//go:generate cmap-gen -package entities -type Location -key uint32
+//go:generate cmap-gen -package models -type Location -key uint32
 type Location struct {
 
 	// уникальный внешний id достопримечательности. Устанавливается тестирующей
@@ -59,12 +58,13 @@ type Location struct {
 	Valid bool `json:"-"`
 }
 
-func (v *Location) Validate() {
+func (v *Location) Validate() error {
 	v.Valid = true
+	return nil
 }
 
 // Visit is Посещение
-//go:generate cmap-gen -package entities -type Visit -key uint32
+//go:generate cmap-gen -package models -type Visit -key uint32
 type Visit struct {
 
 	// уникальный внешний id посещения. Устанавливается тестирующей системой.
@@ -86,23 +86,7 @@ type Visit struct {
 	Valid bool `json:"-"`
 }
 
-func (v *Visit) Validate() {
+func (v *Visit) Validate() error {
 	v.Valid = true
-}
-
-// LocationMarks is used to calculate average location mark
-//go:generate cmap-gen -package entities -type *LocationMarks -key uint32
-//ffjson:skip
-type LocationMarks struct {
-	mu    sync.RWMutex
-	sum   uint32
-	count int
-}
-
-// UserVisits is user visits index
-//go:generate cmap-gen -package entities -type *UserVisits -key uint32
-//ffjson:skip
-type UserVisits struct {
-	mu     sync.RWMutex
-	visits []uint32
+	return nil
 }

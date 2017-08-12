@@ -1,16 +1,18 @@
-.PHONY: clean run docker publish
+.PHONY: clean run docker generated publish
 
 docker: hlcup Dockerfile
 	docker build -t stor.highloadcup.ru/travels/raccoon_shooter .
 
-GENERATED = entities/location_cmap.go entities/locationmarks_cmap.go entities/types_ffjson.go entities/user_cmap.go entities/uservisits_cmap.go entities/visit_cmap.go
+GENERATED = models/location_cmap.go models/locationmarks_cmap.go models/types_ffjson.go models/user_cmap.go models/uservisits_cmap.go models/visit_cmap.go
 
-entities/location_cmap.go: entities/types.go
+models/location_cmap.go: models/entities.go models/indexes.go
 	rm -f $(GENERATED)
-	go generate ./entities
+	go generate ./models
 	rm -rf ffjson-*
 
-entities/locationmarks_cmap.go entities/types_ffjson.go entities/user_cmap.go entities/uservisits_cmap.go entities/visit_cmap.go: entities/location_cmap.go
+models/locationmarks_cmap.go models/types_ffjson.go models/user_cmap.go models/uservisits_cmap.go models/visit_cmap.go: models/location_cmap.go
+
+generated: $(GENERATED)
 
 hlcup: *.go */*.go $(GENERATED)
 	CGO_ENABLED=0 go build -ldflags="-s -w"
@@ -23,4 +25,4 @@ publish:
 
 clean:
 	go clean ./...
-	rm -rf hlcup entities/ffjson-* $(GENERATED)
+	rm -rf hlcup models/ffjson-* $(GENERATED)
