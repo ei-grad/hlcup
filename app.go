@@ -120,7 +120,8 @@ func (app Application) requestHandler(ctx *fasthttp.RequestCtx) {
 				first := true
 
 				ctx.WriteString(`{"visits":[`)
-				for _, i := range visits {
+				visits.M.RLock()
+				for _, i := range visits.Visits {
 					// TODO: implement /users/<id>/visits filters
 					if !filter(i) {
 						continue
@@ -132,6 +133,7 @@ func (app Application) requestHandler(ctx *fasthttp.RequestCtx) {
 					ctx.Write(tmp)
 					first = false
 				}
+				visits.M.RUnlock()
 				ctx.WriteString("]}")
 				return
 
@@ -150,13 +152,15 @@ func (app Application) requestHandler(ctx *fasthttp.RequestCtx) {
 
 				marks := app.db.GetLocationMarks(id)
 				var sum, count int
-				for _, i := range marks {
+				marks.M.RLock()
+				for _, i := range marks.Marks {
 					if !filter(i) {
 						continue
 					}
 					sum = sum + int(i.Mark)
 					count = count + 1
 				}
+				marks.M.RUnlock()
 				if count == 0 {
 					// location have no marks
 					ctx.WriteString(`{"avg":0}`)

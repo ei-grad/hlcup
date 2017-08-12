@@ -10,21 +10,21 @@ import (
 	"github.com/ei-grad/hlcup/models"
 )
 
-type LocationMarkByVisitedAt []models.LocationMark
+type UserVisitByVisitedAt []models.UserVisit
 
 // Len is part of sort.Interface.
-func (lm LocationMarkByVisitedAt) Len() int {
-	return len(lm)
+func (uv UserVisitByVisitedAt) Len() int {
+	return len(uv)
 }
 
 // Swap is part of sort.Interface.
-func (lm LocationMarkByVisitedAt) Swap(i, j int) {
-	lm[i], lm[j] = lm[j], lm[i]
+func (uv UserVisitByVisitedAt) Swap(i, j int) {
+	uv[i], uv[j] = uv[j], uv[i]
 }
 
 // Less is part of sort.Interface. It is implemented by calling the "by" closure in the sorter.
-func (lm LocationMarkByVisitedAt) Less(i, j int) bool {
-	return lm[i].VisitedAt < lm[j].VisitedAt
+func (uv UserVisitByVisitedAt) Less(i, j int) bool {
+	return uv[i].VisitedAt < uv[j].VisitedAt
 }
 
 // GetVisit returns visit by its ID
@@ -66,7 +66,6 @@ func (db *DB) AddVisit(v models.Visit) error {
 		Mark:      v.Mark,
 		Gender:    []byte(user.Gender)[0],
 	})
-	sort.Sort(LocationMarkByVisitedAt(lm.Marks))
 	lm.M.Unlock()
 
 	uv := db.userVisits.Get(v.User)
@@ -87,30 +86,17 @@ func (db *DB) AddVisit(v models.Visit) error {
 		Country:   location.Country,
 		Distance:  location.Distance,
 	})
+	sort.Sort(UserVisitByVisitedAt(uv.Visits))
 	uv.M.Unlock()
 
 	return nil
 
 }
 
-func (db *DB) GetLocationMarks(id uint32) (ret []models.LocationMark) {
-	lm := db.locationMarks.Get(id)
-	if lm != nil {
-		lm.M.RLock()
-		defer lm.M.RUnlock()
-		ret = make([]models.LocationMark, len(lm.Marks))
-		copy(ret, lm.Marks)
-	}
-	return
+func (db *DB) GetLocationMarks(id uint32) *models.LocationMarks {
+	return db.locationMarks.Get(id)
 }
 
-func (db *DB) GetUserVisits(id uint32) (ret []models.UserVisit) {
-	uv := db.userVisits.Get(id)
-	if uv != nil {
-		uv.M.RLock()
-		defer uv.M.RUnlock()
-		ret = make([]models.UserVisit, len(uv.Visits))
-		copy(ret, uv.Visits)
-	}
-	return
+func (db *DB) GetUserVisits(id uint32) *models.UserVisits {
+	return db.userVisits.Get(id)
 }

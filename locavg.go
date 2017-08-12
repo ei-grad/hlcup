@@ -85,7 +85,7 @@ func GetMarksFilter(args *fasthttp.Args) (ret LocationMarkFilter, err error) {
 		return true
 	}
 
-	return
+	return ret, nil
 }
 
 func filterLocationMarkFromDate(t int) LocationMarkFilter {

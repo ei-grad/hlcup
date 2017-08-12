@@ -68,7 +68,7 @@ func GetVisitsFilter(args *fasthttp.Args) (ret UserVisitFilter, err error) {
 		return true
 	}
 
-	return
+	return ret, nil
 }
 
 func filterUserVisitFromDate(t int) UserVisitFilter {
