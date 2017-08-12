@@ -101,11 +101,11 @@ func (app Application) requestHandler(ctx *fasthttp.RequestCtx) {
 
 				visits := app.db.GetUserVisits(id)
 				if visits == nil {
-					// 404 - user have no visits
-					ctx.SetStatusCode(http.StatusNotFound)
-					ctx.Logger().Printf("user have no visits")
+					// user have no visits
+					ctx.WriteString(`{"visits":[]}`)
 					return
 				}
+
 				ctx.WriteString(`{"visits":[`)
 				tmp, _ := visits[0].MarshalJSON()
 				ctx.Write(tmp)
