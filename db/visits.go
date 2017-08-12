@@ -64,6 +64,7 @@ func (db *DB) AddVisit(v models.Visit) error {
 		VisitedAt: v.VisitedAt,
 		BirthDate: time.Unix(user.BirthDate, 0),
 		Mark:      v.Mark,
+		Gender:    user.Gender,
 	})
 	sort.Sort(LocationMarkByVisitedAt(lm.Marks))
 	lm.M.Unlock()

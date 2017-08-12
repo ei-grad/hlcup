@@ -99,6 +99,18 @@ func (app Application) requestHandler(ctx *fasthttp.RequestCtx) {
 
 			case entity == "users" && tail == "visits":
 
+				if !app.db.GetUser(id).IsValid() {
+					ctx.SetStatusCode(http.StatusNotFound)
+					return
+				}
+
+				filter, err := GetVisitsFilter(ctx.QueryArgs())
+				if err != nil {
+					ctx.SetStatusCode(http.StatusBadRequest)
+					ctx.Logger().Printf(err.Error())
+					return
+				}
+
 				visits := app.db.GetUserVisits(id)
 				if visits == nil {
 					// user have no visits
@@ -106,32 +118,51 @@ func (app Application) requestHandler(ctx *fasthttp.RequestCtx) {
 					return
 				}
 
+				first := true
+
 				ctx.WriteString(`{"visits":[`)
-				tmp, _ := visits[0].MarshalJSON()
-				ctx.Write(tmp)
-				for _, i := range visits[1:] {
+				for _, i := range visits {
 					// TODO: implement /users/<id>/visits filters
-					ctx.WriteString(",")
-					tmp, _ = i.MarshalJSON()
+					if !filter(i) {
+						continue
+					}
+					if !first {
+						ctx.WriteString(",")
+					}
+					tmp, _ := i.MarshalJSON()
 					ctx.Write(tmp)
+					first = false
 				}
 				ctx.WriteString("]}")
 				return
 
 			case entity == "locations" && tail == "avg":
 
-				marks := app.db.GetLocationMarks(id)
-				if marks == nil {
-					// 404 - no marks for specified location
+				if !app.db.GetLocation(id).IsValid() {
 					ctx.SetStatusCode(http.StatusNotFound)
-					ctx.Logger().Printf("location have no marks")
 					return
 				}
+
+				filter, err := GetMarksFilter(ctx.QueryArgs())
+				if err != nil {
+					ctx.SetStatusCode(http.StatusBadRequest)
+					ctx.Logger().Printf(err.Error())
+					return
+				}
+
+				marks := app.db.GetLocationMarks(id)
 				var sum, count int
 				for _, i := range marks {
-					// TODO: implement /locations/<id>/avg filters
+					if !filter(i) {
+						continue
+					}
 					sum = sum + int(i.Mark)
 					count = count + 1
+				}
+				if count == 0 {
+					// location have no marks
+					ctx.WriteString(`{"avg":0}`)
+					return
 				}
 				ctx.WriteString(fmt.Sprintf(`{"avg": %.5f}`, float64(sum)/float64(count)))
 				return

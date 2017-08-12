@@ -1,4 +1,4 @@
-.PHONY: clean run generated fixlinter publish
+.PHONY: clean run generated fixlinter watch publish
 
 all: fixlinter hlcup
 
@@ -20,10 +20,10 @@ GENERATED = \
 	models/uservisits_cmap.go \
 	models/visit_cmap.go
 
-#models/entities_ffjson.go: models/entities.go models/indexes.go
 $(GENERATED): models/entities.go models/indexes.go
+	rm -f $(GENERATED)
 	go generate ./models
-	rm -rf ffjson-*
+	rm -rf models/ffjson-*
 
 #models/location_cmap.go models/locationmarks_cmap.go models/user_cmap.go models/uservisits_cmap.go models/visit_cmap.go models/indexes_ffjson.go: models/entities_ffjson.go 
 
@@ -35,9 +35,12 @@ hlcup: *.go */*.go $(GENERATED)
 run: docker
 	docker run -it --rm -p 127.0.0.1:80:80 -v $$PWD/data:/tmp/data stor.highloadcup.ru/travels/raccoon_shooter ./hlcup $(ARGS)
 
-publish:
+publish: docker
 	docker push stor.highloadcup.ru/travels/raccoon_shooter
 
 clean:
 	go clean ./... github.com/ei-grad/hlcup/...
 	rm -rf hlcup $(GENERATED)
+
+watch: hlcup
+	iwatch "go build -o debug && ./debug -b :8000 -url http://127.0.0.1:8000 -data data/data.zip -v"

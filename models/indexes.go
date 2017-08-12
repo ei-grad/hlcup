@@ -18,7 +18,7 @@ type LocationMark struct {
 	VisitID   uint32
 	VisitedAt int
 	BirthDate time.Time
-	Gender    rune
+	Gender    byte
 	Mark      uint8
 }
 

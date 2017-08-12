@@ -20,7 +20,7 @@ type User struct {
 	LastName  string `json:"last_name"`
 
 	// unicode-строка "m" означает мужчской пол, а "f" - женский.
-	Gender string `json:"gender"`
+	Gender byte `json:"gender"`
 
 	// дата рождения, записанная как число секунд от начала UNIX-эпохи по UTC
 	// (другими словами - это timestamp). Ограничено снизу 01.01.1930 и сверху
@@ -35,7 +35,7 @@ func (v *User) Validate() error {
 	return nil
 }
 
-func (v *User) IsValid() bool {
+func (v User) IsValid() bool {
 	return v.Valid
 }
 
@@ -67,7 +67,7 @@ func (v *Location) Validate() error {
 	return nil
 }
 
-func (v *Location) IsValid() bool {
+func (v Location) IsValid() bool {
 	return v.Valid
 }
 
@@ -99,6 +99,6 @@ func (v *Visit) Validate() error {
 	return nil
 }
 
-func (v *Visit) IsValid() bool {
+func (v Visit) IsValid() bool {
 	return v.Valid
 }
