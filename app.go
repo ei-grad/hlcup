@@ -80,7 +80,7 @@ func (app Application) requestHandler(ctx *fasthttp.RequestCtx) {
 			}
 
 			if err != nil {
-				// ffjson marshal failed, shouldn't happen
+				// v.MarshalJSON() failed, shouldn't happen
 				panic(err)
 			}
 
@@ -108,6 +108,7 @@ func (app Application) requestHandler(ctx *fasthttp.RequestCtx) {
 				if visits == nil {
 					// 404 - user have no visits
 					ctx.SetStatusCode(http.StatusNotFound)
+					ctx.Logger().Printf("user have no visits")
 					return
 				}
 				ctx.WriteString(`{"visits":[`)
@@ -128,6 +129,7 @@ func (app Application) requestHandler(ctx *fasthttp.RequestCtx) {
 				if marks == nil {
 					// 404 - no marks for specified location
 					ctx.SetStatusCode(http.StatusNotFound)
+					ctx.Logger().Printf("location have no marks")
 					return
 				}
 				var sum, count int
@@ -156,9 +158,11 @@ func (app Application) requestHandler(ctx *fasthttp.RequestCtx) {
 			return
 		}
 
+		entity := string(parts[1])
+
+		body := ctx.PostBody()
+
 		if string(parts[2]) == "new" {
-			entity := string(parts[1])
-			body := ctx.PostBody()
 			switch entity {
 			case strUsers:
 				var v models.User
