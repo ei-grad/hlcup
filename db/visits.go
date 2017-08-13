@@ -2,31 +2,12 @@ package db
 
 import (
 	"fmt"
-	"sort"
-	"strconv"
 	"time"
 
 	"github.com/ei-grad/hlcup/models"
 )
 
-type UserVisitByVisitedAt []models.UserVisit
-
-// Len is part of sort.Interface.
-func (uv UserVisitByVisitedAt) Len() int {
-	return len(uv)
-}
-
-// Swap is part of sort.Interface.
-func (uv UserVisitByVisitedAt) Swap(i, j int) {
-	uv[i], uv[j] = uv[j], uv[i]
-}
-
-// Less is part of sort.Interface. It is implemented by calling the "by" closure in the sorter.
-func (uv UserVisitByVisitedAt) Less(i, j int) bool {
-	return uv[i].VisitedAt < uv[j].VisitedAt
-}
-
-// GetVisit returns visit by its ID
+// GetVisit get visit by id
 func (db *DB) GetVisit(id uint32) models.Visit {
 	return db.visits.Get(id)
 }
@@ -50,17 +31,7 @@ func (db *DB) AddVisit(v models.Visit) error {
 	}
 
 	// Add to db.locationMarks
-	lm := db.locationMarks.Get(v.Location)
-	if lm == nil {
-		t, _ := db.locationSF.Do(strconv.Itoa(int(v.Location)), func() (interface{}, error) {
-			ret := &models.LocationMarks{}
-			db.locationMarks.Set(v.Location, ret)
-			return ret, nil
-		})
-		lm, _ = t.(*models.LocationMarks)
-	}
-	lm.M.Lock()
-	lm.Marks = append(lm.Marks, models.LocationMark{
+	db.GetLocationMarks(v.Location).Add(models.LocationMark{
 		Visit:     v.ID,
 		User:      v.User,
 		VisitedAt: v.VisitedAt,
@@ -68,20 +39,9 @@ func (db *DB) AddVisit(v models.Visit) error {
 		Mark:      v.Mark,
 		Gender:    []byte(user.Gender)[0],
 	})
-	lm.M.Unlock()
 
 	// Add to db.userVisits
-	uv := db.userVisits.Get(v.User)
-	if uv == nil {
-		t, _ := db.userSF.Do(strconv.Itoa(int(v.User)), func() (interface{}, error) {
-			ret := &models.UserVisits{}
-			db.userVisits.Set(v.User, ret)
-			return ret, nil
-		})
-		uv, _ = t.(*models.UserVisits)
-	}
-	uv.M.Lock()
-	uv.Visits = append(uv.Visits, models.UserVisit{
+	db.GetUserVisits(v.User).Add(models.UserVisit{
 		Visit:     v.ID,
 		Location:  v.Location,
 		Mark:      v.Mark,
@@ -90,45 +50,7 @@ func (db *DB) AddVisit(v models.Visit) error {
 		Country:   location.Country,
 		Distance:  location.Distance,
 	})
-	sort.Sort(UserVisitByVisitedAt(uv.Visits))
-	uv.M.Unlock()
-
-	// Add user to db.locationUsers
-	lu := db.locationUsers.Get(v.Location)
-	if lu == nil {
-		t, _ := db.luSF.Do(strconv.Itoa(int(v.Location)), func() (interface{}, error) {
-			ret := &models.LocationUsers{}
-			db.locationUsers.Set(v.Location, ret)
-			return ret, nil
-		})
-		lu, _ = t.(*models.LocationUsers)
-	}
-	lu.M.Lock()
-	lu.Users = append(lu.Users, v.User)
-	lu.M.Unlock()
-
-	// Add location to db.userLocations
-	ul := db.userLocations.Get(v.User)
-	if ul == nil {
-		t, _ := db.ulSF.Do(strconv.Itoa(int(v.User)), func() (interface{}, error) {
-			ret := &models.UserLocations{}
-			db.userLocations.Set(v.User, ret)
-			return ret, nil
-		})
-		ul, _ = t.(*models.UserLocations)
-	}
-	ul.M.Lock()
-	ul.Locations = append(ul.Locations, v.Location)
-	ul.M.Unlock()
 
 	return nil
 
-}
-
-func (db *DB) GetLocationMarks(id uint32) *models.LocationMarks {
-	return db.locationMarks.Get(id)
-}
-
-func (db *DB) GetUserVisits(id uint32) *models.UserVisits {
-	return db.userVisits.Get(id)
 }

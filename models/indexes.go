@@ -1,6 +1,7 @@
 package models
 
 import (
+	"sort"
 	"sync"
 	"time"
 )
@@ -31,6 +32,24 @@ type LocationMarks struct {
 	Marks []LocationMark
 }
 
+func (lm *LocationMarks) Add(m LocationMark) {
+	lm.M.Lock()
+	lm.Marks = append(lm.Marks, m)
+	lm.M.Unlock()
+}
+
+func (lm *LocationMarks) Pop(visitID uint32) (LocationMark, bool) {
+	lm.M.Lock()
+	defer lm.M.Unlock()
+	for n, i := range lm.Marks {
+		if i.Visit == visitID {
+			lm.Marks = append(lm.Marks[:n], lm.Marks[n+1:]...)
+			return i, true
+		}
+	}
+	return LocationMark{}, false
+}
+
 // UserVisit is used to filter and output the user visit info
 //    fromDate - посещения с visited_at > fromDate
 //    toDate - посещения с visited_at < toDate
@@ -55,18 +74,38 @@ type UserVisits struct {
 	Visits []UserVisit
 }
 
-// UserLocations holds a list of location IDs which the user has visited
-//go:generate cmap-gen -package models -type *UserLocations -key uint32
-//ffjson:skip
-type UserLocations struct {
-	M         sync.RWMutex
-	Locations []uint32
+type UserVisitByVisitedAt []UserVisit
+
+// Len is part of sort.Interface.
+func (uv UserVisitByVisitedAt) Len() int {
+	return len(uv)
 }
 
-// LocationUsers holds a list of users IDs which visited the location
-//go:generate cmap-gen -package models -type *LocationUsers -key uint32
-//ffjson:skip
-type LocationUsers struct {
-	M     sync.RWMutex
-	Users []uint32
+// Swap is part of sort.Interface.
+func (uv UserVisitByVisitedAt) Swap(i, j int) {
+	uv[i], uv[j] = uv[j], uv[i]
+}
+
+// Less is part of sort.Interface. It is implemented by calling the "by" closure in the sorter.
+func (uv UserVisitByVisitedAt) Less(i, j int) bool {
+	return uv[i].VisitedAt < uv[j].VisitedAt
+}
+
+func (uv *UserVisits) Add(v UserVisit) {
+	uv.M.Lock()
+	uv.Visits = append(uv.Visits, v)
+	sort.Sort(UserVisitByVisitedAt(uv.Visits))
+	uv.M.Unlock()
+}
+
+func (uv *UserVisits) Pop(visitID uint32) (UserVisit, bool) {
+	uv.M.Lock()
+	defer uv.M.Unlock()
+	for n, i := range uv.Visits {
+		if i.Visit == visitID {
+			uv.Visits = append(uv.Visits[:n], uv.Visits[n+1:]...)
+			return i, true
+		}
+	}
+	return UserVisit{}, false
 }

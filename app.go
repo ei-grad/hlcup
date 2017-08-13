@@ -2,15 +2,12 @@ package main
 
 import (
 	"bytes"
-	"errors"
-	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/valyala/fasthttp"
 
 	"github.com/ei-grad/hlcup/db"
-	"github.com/ei-grad/hlcup/models"
 )
 
 // Application implements application logic
@@ -24,6 +21,14 @@ func NewApplication() (app Application) {
 	return
 }
 
+func parseUint32(s []byte) (uint32, error) {
+	parsed, err := strconv.ParseUint(string(s), 10, 32)
+	if err != nil {
+		return 0, err
+	}
+	return uint32(parsed), nil
+}
+
 // RequestHandler contains implementation of all routes and most of application
 // logic
 func (app Application) RequestHandler(ctx *fasthttp.RequestCtx) {
@@ -32,189 +37,44 @@ func (app Application) RequestHandler(ctx *fasthttp.RequestCtx) {
 
 	parts := bytes.SplitN(ctx.Path(), []byte("/"), 4)
 
+	var (
+		id     uint32
+		status int
+		err    error
+	)
+
 	switch string(ctx.Method()) {
 
 	case strGet:
-
-		var v interface {
-			IsValid() bool
-			MarshalJSON() ([]byte, error)
-		}
-
 		switch len(parts) {
 		case 3:
-
-			var resp []byte
-			var id uint32
-
-			entity := string(parts[1])
-
-			id64, err := strconv.ParseUint(string(parts[2]), 10, 32)
-			if err != nil {
-				// 404 - id is not integer
-				ctx.SetStatusCode(http.StatusNotFound)
-				return
+			if string(parts[2]) == "new" {
+				status = http.StatusMethodNotAllowed
+			} else if id, err = parseUint32(parts[2]); err != nil {
+				status = http.StatusNotFound
+			} else {
+				status = app.getEntity(ctx, string(parts[1]), id)
 			}
-			id = uint32(id64)
-
-			switch entity {
-			case strUsers:
-				user := app.db.GetUser(id)
-				v = &user
-			case strLocations:
-				location := app.db.GetLocation(id)
-				v = &location
-			case strVisits:
-				visit := app.db.GetVisit(id)
-				v = &visit
-			default:
-				ctx.SetStatusCode(http.StatusNotFound)
-				return
-			}
-
-			if !v.IsValid() {
-				// 404 - user with given ID doesn't exist
-				ctx.SetStatusCode(http.StatusNotFound)
-				return
-			}
-
-			resp, err = v.MarshalJSON()
-			if err != nil {
-				// v.MarshalJSON() failed, shouldn't happen
-				panic(err)
-			}
-
-			ctx.Write(resp)
-
-			return
-
 		case 4:
-
-			entity := string(parts[1])
-
-			id64, err := strconv.ParseUint(string(parts[2]), 10, 32)
-			if err != nil {
-				// 404 - id is not integer
-				ctx.SetStatusCode(http.StatusNotFound)
-				return
+			if id, err = parseUint32(parts[2]); err != nil {
+				status = http.StatusNotFound
+			} else {
+				entity := string(parts[1])
+				tail := string(parts[3])
+				switch {
+				case entity == "users" && tail == "visits":
+					status = app.getUserVisits(ctx, id)
+				case entity == "locations" && tail == "avg":
+					status = app.getLocationAvg(ctx, id)
+				case entity == "locations" && tail == "marks":
+					status = app.getLocationMarks(ctx, id)
+				default:
+					status = http.StatusNotFound
+				}
 			}
-			id := uint32(id64)
-
-			tail := string(parts[3])
-
-			switch {
-
-			case entity == "users" && tail == "visits":
-
-				if !app.db.GetUser(id).IsValid() {
-					ctx.SetStatusCode(http.StatusNotFound)
-					return
-				}
-
-				filter, err := GetVisitsFilter(ctx.QueryArgs())
-				if err != nil {
-					ctx.SetStatusCode(http.StatusBadRequest)
-					return
-				}
-
-				visits := app.db.GetUserVisits(id)
-				if visits == nil {
-					// user have no visits
-					ctx.WriteString(`{"visits":[]}`)
-					return
-				}
-
-				first := true
-
-				ctx.WriteString(`{"visits":[`)
-				visits.M.RLock()
-				for _, i := range visits.Visits {
-					// TODO: implement /users/<id>/visits filters
-					if !filter(i) {
-						continue
-					}
-					if !first {
-						ctx.WriteString(",")
-					}
-					tmp, _ := i.MarshalJSON()
-					ctx.Write(tmp)
-					first = false
-				}
-				visits.M.RUnlock()
-				ctx.WriteString("]}")
-				return
-
-			case entity == "locations" && tail == "avg":
-
-				if !app.db.GetLocation(id).IsValid() {
-					ctx.SetStatusCode(http.StatusNotFound)
-					return
-				}
-
-				filter, err := GetMarksFilter(ctx.QueryArgs())
-				if err != nil {
-					ctx.SetStatusCode(http.StatusBadRequest)
-					return
-				}
-
-				var sum, count int
-				var avg float64
-
-				marks := app.db.GetLocationMarks(id)
-				if marks != nil {
-					marks.M.RLock()
-					for _, i := range marks.Marks {
-						if !filter(i) {
-							continue
-						}
-						sum = sum + int(i.Mark)
-						count = count + 1
-					}
-					marks.M.RUnlock()
-				}
-				if count == 0 {
-					// location have no marks
-					avg = 0.
-				} else {
-					avg = float64(sum) / float64(count)
-				}
-				ctx.WriteString(fmt.Sprintf(`{"avg": %.5f}`, avg))
-				return
-
-			case entity == "locations" && tail == "marks":
-
-				if !app.db.GetLocation(id).IsValid() {
-					ctx.SetStatusCode(http.StatusNotFound)
-					return
-				}
-
-				first := true
-
-				ctx.WriteString(`{"marks":[`)
-				marks := app.db.GetLocationMarks(id)
-				if marks != nil {
-					marks.M.RLock()
-					for _, i := range marks.Marks {
-						if !first {
-							ctx.WriteString(",")
-						}
-						tmp, _ := i.MarshalJSON()
-						ctx.Write(tmp)
-						first = false
-					}
-				}
-				marks.M.RUnlock()
-				ctx.WriteString("]}")
-				return
-
-			default:
-				ctx.SetStatusCode(http.StatusNotFound)
-				return
-
-			}
-
+		default:
+			status = http.StatusNotFound
 		}
-
 	case strPost:
 
 		// To fix the "Empty response" error in yandex-tank logs we have to send
@@ -225,144 +85,34 @@ func (app Application) RequestHandler(ctx *fasthttp.RequestCtx) {
 		ctx.Write([]byte("{}"))
 
 		if len(parts) != 3 {
-			ctx.SetStatusCode(http.StatusNotFound)
-			return
+			status = http.StatusNotFound
+			break
 		}
-
-		entity := string(parts[1])
 
 		body := ctx.PostBody()
 
+		// XXX: some email's could contain the null string... but hopefully - not :-)
 		if bytes.Contains(body, []byte("null")) {
-			ctx.SetStatusCode(http.StatusBadRequest)
 			ctx.Logger().Printf("found null value: %s", body)
-			return
-		}
-
-		var v interface {
-			UnmarshalJSON([]byte) error
-			Validate() error
+			status = http.StatusBadRequest
+			break
 		}
 
 		if string(parts[2]) == "new" {
-
-			var saver func() error
-
-			switch entity {
-			case strUsers:
-				var user models.User
-				v = &user
-				saver = func() error { return app.db.AddUser(user) }
-			case strLocations:
-				var location models.Location
-				v = &location
-				saver = func() error { return app.db.AddLocation(location) }
-			case strVisits:
-				var visit models.Visit
-				v = &visit
-				saver = func() error { return app.db.AddVisit(visit) }
-			default:
-				ctx.SetStatusCode(http.StatusNotFound)
-				return
-			}
-
-			if err := v.UnmarshalJSON(body); err != nil {
-				ctx.SetStatusCode(http.StatusBadRequest)
-				ctx.Logger().Printf(err.Error())
-				return
-			}
-			if err := v.Validate(); err != nil {
-				ctx.SetStatusCode(http.StatusBadRequest)
-				ctx.Logger().Printf("validate failed: %s", err.Error())
-				return
-			}
-			if err := saver(); err != nil {
-				ctx.SetStatusCode(http.StatusBadRequest)
-				ctx.Logger().Printf("can't add %+v: %s\nBody:\n%s", v, err.Error(), body)
-				return
-			}
-
+			status = app.postEntityNew(ctx, string(parts[1]), body)
 		} else {
-
-			id64, err := strconv.ParseUint(string(parts[2]), 10, 32)
-			if err != nil {
-				// 404 - id is not integer
-				ctx.SetStatusCode(http.StatusNotFound)
-				return
+			if id, err = parseUint32(parts[2]); err != nil {
+				status = http.StatusNotFound
+				break
 			}
-			id := uint32(id64)
-
-			var v interface {
-				Validate() error
-				IsValid() bool
-			}
-
-			var user models.User
-			var location models.Location
-			var visit models.Visit
-
-			switch entity {
-			case strUsers:
-				user = app.db.GetUser(id)
-				v = &user
-			case strLocations:
-				location = app.db.GetLocation(id)
-				v = &location
-			case strVisits:
-				visit = app.db.GetVisit(id)
-				v = &visit
-			default:
-				ctx.SetStatusCode(http.StatusNotFound)
-				return
-			}
-
-			// check that entity already exist
-			if !v.IsValid() {
-				ctx.SetStatusCode(http.StatusNotFound)
-				return
-			}
-
-			switch entity {
-			case strUsers:
-				err = user.UnmarshalJSON(body)
-				if err == nil && user.ID != id {
-					err = errors.New("id is forbidden in update")
-				}
-			case strLocations:
-				err = location.UnmarshalJSON(body)
-				if err == nil && location.ID != id {
-					err = errors.New("id is forbidden in update")
-				}
-			case strVisits:
-				err = visit.UnmarshalJSON(body)
-				if err == nil && visit.ID != id {
-					err = errors.New("id is forbidden in update")
-				}
-			}
-
-			if err == nil {
-				err = v.Validate()
-			}
-
-			if err != nil {
-				ctx.SetStatusCode(http.StatusBadRequest)
-				return
-			}
-
-			switch entity {
-			case strUsers:
-				app.db.UpdateUser(user)
-			case strLocations:
-				app.db.UpdateLocation(location)
-			case strVisits:
-				app.db.UpdateVisit(visit)
-			}
-
+			status = app.postEntity(ctx, string(parts[1]), id, body)
 		}
 
 	default:
-		ctx.SetStatusCode(http.StatusMethodNotAllowed)
-		return
+		// XXX: rewrite with typed handlers to fix 405 errors on all urls?
+		status = http.StatusMethodNotAllowed
 	}
+
+	ctx.SetStatusCode(status)
 
 }

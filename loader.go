@@ -16,6 +16,7 @@ import (
 type Loader struct {
 	baseURL, fileName string
 	wg                sync.WaitGroup
+	limit             chan struct{}
 	count             int
 }
 
