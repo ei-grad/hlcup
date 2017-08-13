@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -232,6 +233,11 @@ func (app Application) RequestHandler(ctx *fasthttp.RequestCtx) {
 		entity := string(parts[1])
 
 		body := ctx.PostBody()
+
+		if err := json.Unmarshal(body, &map[string]interface{}{}); err != nil {
+			ctx.SetStatusCode(http.StatusBadRequest)
+			ctx.Logger().Printf("json.Unmarshal failed: %s\nBody:\n%s", err.Error(), body)
+		}
 
 		var v interface {
 			UnmarshalJSON([]byte) error
