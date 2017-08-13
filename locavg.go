@@ -71,7 +71,8 @@ func GetMarksFilter(args *fasthttp.Args) (ret LocationMarkFilter, err error) {
 
 	genderRaw := args.Peek("gender")
 	if genderRaw != nil {
-		if genderRaw[0] != 'm' && genderRaw[0] != 'f' {
+		if len(genderRaw) != 1 || (genderRaw[0] != 'm' && genderRaw[0] != 'f') {
+			return nil, fmt.Errorf("invalid gender")
 		}
 		filters = append(filters, filterLocationMarkCountry(genderRaw[0]))
 	}

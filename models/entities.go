@@ -2,7 +2,7 @@ package models
 
 import "errors"
 
-//go:generate ffjson $GOFILE
+//go:generate ffjson -strict $GOFILE
 
 // User is user profile
 //go:generate cmap-gen -package models -type User -key uint32
@@ -34,6 +34,8 @@ type User struct {
 
 func (v *User) Validate() error {
 	switch {
+	case v.ID == 0:
+		return errors.New("id should be non-zero")
 	case len(v.Email) > 100:
 		return errors.New("email is too long")
 	case len(v.FirstName) > 50:
@@ -76,6 +78,8 @@ type Location struct {
 
 func (v *Location) Validate() error {
 	switch {
+	case v.ID == 0:
+		return errors.New("id should be non-zero")
 	case len(v.Country) > 50:
 		return errors.New("country is too long")
 	case len(v.City) > 50:
@@ -114,6 +118,8 @@ type Visit struct {
 
 func (v *Visit) Validate() error {
 	switch {
+	case v.ID == 0:
+		return errors.New("id should be non-zero")
 	case v.Mark < 0 || v.Mark > 5:
 		return errors.New("invalid mark")
 	}
