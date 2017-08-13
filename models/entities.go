@@ -1,5 +1,7 @@
 package models
 
+import "errors"
+
 //go:generate ffjson $GOFILE
 
 // User is user profile
@@ -31,6 +33,16 @@ type User struct {
 }
 
 func (v *User) Validate() error {
+	switch {
+	case v.Gender != "m" && v.Gender != "f":
+		return errors.New("invalid gender")
+	case len(v.Email) > 100:
+		return errors.New("email is too long")
+	case len(v.FirstName) > 50:
+		return errors.New("first_name is too long")
+	case len(v.LastName) > 50:
+		return errors.New("last_name is too long")
+	}
 	v.Valid = true
 	return nil
 }
@@ -63,6 +75,12 @@ type Location struct {
 }
 
 func (v *Location) Validate() error {
+	switch {
+	case len(v.Country) > 50:
+		return errors.New("country is too long")
+	case len(v.City) > 50:
+		return errors.New("city is too long")
+	}
 	v.Valid = true
 	return nil
 }
@@ -95,6 +113,10 @@ type Visit struct {
 }
 
 func (v *Visit) Validate() error {
+	switch {
+	case v.Mark < 0 || v.Mark > 5:
+		return errors.New("invalid mark")
+	}
 	v.Valid = true
 	return nil
 }
