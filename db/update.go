@@ -43,23 +43,25 @@ func (db *DB) UpdateLocation(v models.Location) {
 
 	if old.Place != v.Place || old.Country != v.Country || old.Distance != v.Distance {
 		lu := db.locationUsers.Get(v.ID)
-		lu.M.RLock()
-		for _, i := range lu.Users {
-			uv := db.userVisits.Get(i)
-			if uv == nil {
-				continue
-			}
-			uv.M.Lock()
-			for _, i := range uv.Visits {
-				if i.Location == v.ID {
-					i.Place = v.Place
-					i.Country = v.Country
-					i.Distance = v.Distance
+		if lu != nil {
+			lu.M.RLock()
+			for _, i := range lu.Users {
+				uv := db.userVisits.Get(i)
+				if uv == nil {
+					continue
 				}
+				uv.M.Lock()
+				for _, i := range uv.Visits {
+					if i.Location == v.ID {
+						i.Place = v.Place
+						i.Country = v.Country
+						i.Distance = v.Distance
+					}
+				}
+				uv.M.Unlock()
 			}
-			uv.M.Unlock()
+			lu.M.RUnlock()
 		}
-		lu.M.RUnlock()
 	}
 
 	db.locations.Set(v.ID, v)
