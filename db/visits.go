@@ -34,6 +34,9 @@ func (db *DB) GetVisit(id uint32) models.Visit {
 // AddVisit adds Visit to index
 func (db *DB) AddVisit(v models.Visit) error {
 
+	if db.visits.Get(v.ID).IsValid() {
+		return fmt.Errorf("visit with id %d already exists", v.ID)
+	}
 	db.visits.Set(v.ID, v)
 
 	location := db.GetLocation(v.Location)

@@ -1,6 +1,8 @@
 package db
 
 import (
+	"fmt"
+
 	sf "github.com/golang/groupcache/singleflight"
 
 	"github.com/ei-grad/hlcup/models"
@@ -33,6 +35,9 @@ func (db *DB) GetUser(id uint32) models.User {
 }
 
 func (db *DB) AddUser(v models.User) error {
+	if db.users.Get(v.ID).IsValid() {
+		return fmt.Errorf("user %d already exist", v.ID)
+	}
 	db.users.Set(v.ID, v)
 	return nil
 }
@@ -42,6 +47,9 @@ func (db *DB) GetLocation(id uint32) models.Location {
 }
 
 func (db *DB) AddLocation(v models.Location) error {
+	if db.locations.Get(v.ID).IsValid() {
+		return fmt.Errorf("location %d already exist", v.ID)
+	}
 	db.locations.Set(v.ID, v)
 	return nil
 }

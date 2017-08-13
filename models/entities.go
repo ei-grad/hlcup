@@ -34,14 +34,14 @@ type User struct {
 
 func (v *User) Validate() error {
 	switch {
-	case v.Gender != "m" && v.Gender != "f":
-		return errors.New("invalid gender")
 	case len(v.Email) > 100:
 		return errors.New("email is too long")
 	case len(v.FirstName) > 50:
 		return errors.New("first_name is too long")
 	case len(v.LastName) > 50:
 		return errors.New("last_name is too long")
+	case v.Gender != "m" && v.Gender != "f":
+		return errors.New("invalid gender")
 	}
 	v.Valid = true
 	return nil

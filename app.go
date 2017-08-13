@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -318,10 +319,19 @@ func (app Application) RequestHandler(ctx *fasthttp.RequestCtx) {
 			switch entity {
 			case strUsers:
 				err = user.UnmarshalJSON(body)
+				if err == nil && user.ID != id {
+					err = errors.New("id is forbidden in update")
+				}
 			case strLocations:
 				err = location.UnmarshalJSON(body)
+				if err == nil && location.ID != id {
+					err = errors.New("id is forbidden in update")
+				}
 			case strVisits:
 				err = visit.UnmarshalJSON(body)
+				if err == nil && visit.ID != id {
+					err = errors.New("id is forbidden in update")
+				}
 			}
 
 			if err == nil {
