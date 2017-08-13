@@ -44,6 +44,8 @@ func (v *User) Validate() error {
 		return errors.New("last_name is too long")
 	case v.Gender != "m" && v.Gender != "f":
 		return errors.New("invalid gender")
+		//case v.BirthDate < -2147483648 || v.BirthDate > 2147483647:
+		//	return fmt.Errorf("invalid birth_date: %d", v.BirthDate)
 	}
 	v.Valid = true
 	return nil

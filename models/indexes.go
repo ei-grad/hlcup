@@ -13,8 +13,10 @@ import (
 //    fromAge - учитывать только путешественников, у которых возраст (считается от текущего timestamp) больше этого параметра
 //    toAge - как предыдущее, но наоборот
 //    gender - учитывать оценки только мужчин или женщин
+// ffjson используется для отладочной ручки /location/<id>/marks
 type LocationMark struct {
-	VisitID   uint32
+	Visit     uint32
+	User      uint32
 	VisitedAt int
 	BirthDate time.Time
 	Gender    byte
@@ -39,7 +41,8 @@ type UserVisit struct {
 	VisitedAt int    `json:"visited_at"`
 	Place     string `json:"place"`
 
-	VisitID  uint32 `json:"-"`
+	Visit    uint32 `json:"-"`
+	Location uint32 `json:"-"`
 	Country  string `json:"-"`
 	Distance uint32 `json:"-"`
 }
@@ -50,4 +53,20 @@ type UserVisit struct {
 type UserVisits struct {
 	M      sync.RWMutex
 	Visits []UserVisit
+}
+
+// UserLocations holds a list of location IDs which the user has visited
+//go:generate cmap-gen -package models -type *UserLocations -key uint32
+//ffjson:skip
+type UserLocations struct {
+	M         sync.RWMutex
+	Locations []uint32
+}
+
+// LocationUsers holds a list of users IDs which visited the location
+//go:generate cmap-gen -package models -type *LocationUsers -key uint32
+//ffjson:skip
+type LocationUsers struct {
+	M     sync.RWMutex
+	Users []uint32
 }

@@ -18,6 +18,7 @@ GENERATED = \
 	models/locationmarks_cmap.go \
 	models/user_cmap.go \
 	models/uservisits_cmap.go \
+	models/userlocations_cmap.go \
 	models/visit_cmap.go
 
 $(GENERATED): models/entities.go models/indexes.go

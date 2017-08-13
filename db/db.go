@@ -16,8 +16,13 @@ type DB struct {
 	locationMarks *models.LocationMarksMap
 	userVisits    *models.UserVisitsMap
 
+	userLocations *models.UserLocationsMap
+	locationUsers *models.LocationUsersMap
+
 	locationSF sf.Group
 	userSF     sf.Group
+	luSF       sf.Group
+	ulSF       sf.Group
 }
 
 func New() *DB {
@@ -27,6 +32,8 @@ func New() *DB {
 		visits:        models.NewVisitMap(509),
 		locationMarks: models.NewLocationMarksMap(509),
 		userVisits:    models.NewUserVisitsMap(509),
+		userLocations: models.NewUserLocationsMap(509),
+		locationUsers: models.NewLocationUsersMap(509),
 	}
 }
 

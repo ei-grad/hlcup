@@ -49,6 +49,7 @@ func (db *DB) AddVisit(v models.Visit) error {
 		return fmt.Errorf("user with id %d doesn't exist", v.User)
 	}
 
+	// Add to db.locationMarks
 	lm := db.locationMarks.Get(v.Location)
 	if lm == nil {
 		t, _ := db.locationSF.Do(strconv.Itoa(int(v.Location)), func() (interface{}, error) {
@@ -60,7 +61,8 @@ func (db *DB) AddVisit(v models.Visit) error {
 	}
 	lm.M.Lock()
 	lm.Marks = append(lm.Marks, models.LocationMark{
-		VisitID:   v.ID,
+		Visit:     v.ID,
+		User:      v.User,
 		VisitedAt: v.VisitedAt,
 		BirthDate: time.Unix(user.BirthDate, 0),
 		Mark:      v.Mark,
@@ -68,6 +70,7 @@ func (db *DB) AddVisit(v models.Visit) error {
 	})
 	lm.M.Unlock()
 
+	// Add to db.userVisits
 	uv := db.userVisits.Get(v.User)
 	if uv == nil {
 		t, _ := db.userSF.Do(strconv.Itoa(int(v.User)), func() (interface{}, error) {
@@ -79,15 +82,44 @@ func (db *DB) AddVisit(v models.Visit) error {
 	}
 	uv.M.Lock()
 	uv.Visits = append(uv.Visits, models.UserVisit{
+		Visit:     v.ID,
+		Location:  v.Location,
 		Mark:      v.Mark,
 		VisitedAt: v.VisitedAt,
 		Place:     location.Place,
-		VisitID:   v.ID,
 		Country:   location.Country,
 		Distance:  location.Distance,
 	})
 	sort.Sort(UserVisitByVisitedAt(uv.Visits))
 	uv.M.Unlock()
+
+	// Add user to db.locationUsers
+	lu := db.locationUsers.Get(v.Location)
+	if lu == nil {
+		t, _ := db.luSF.Do(strconv.Itoa(int(v.Location)), func() (interface{}, error) {
+			ret := &models.LocationUsers{}
+			db.locationUsers.Set(v.Location, ret)
+			return ret, nil
+		})
+		lu, _ = t.(*models.LocationUsers)
+	}
+	lu.M.Lock()
+	lu.Users = append(lu.Users, v.User)
+	lu.M.Unlock()
+
+	// Add location to db.userLocations
+	ul := db.userLocations.Get(v.User)
+	if ul == nil {
+		t, _ := db.ulSF.Do(strconv.Itoa(int(v.User)), func() (interface{}, error) {
+			ret := &models.UserLocations{}
+			db.userLocations.Set(v.User, ret)
+			return ret, nil
+		})
+		ul, _ = t.(*models.UserLocations)
+	}
+	ul.M.Lock()
+	ul.Locations = append(ul.Locations, v.Location)
+	ul.M.Unlock()
 
 	return nil
 

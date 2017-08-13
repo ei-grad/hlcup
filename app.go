@@ -233,6 +233,12 @@ func (app Application) RequestHandler(ctx *fasthttp.RequestCtx) {
 
 		body := ctx.PostBody()
 
+		if bytes.Contains(body, []byte("null")) {
+			ctx.SetStatusCode(http.StatusBadRequest)
+			ctx.Logger().Printf("found null value: %s", body)
+			return
+		}
+
 		var v interface {
 			UnmarshalJSON([]byte) error
 			Validate() error
@@ -272,7 +278,7 @@ func (app Application) RequestHandler(ctx *fasthttp.RequestCtx) {
 			}
 			if err := saver(); err != nil {
 				ctx.SetStatusCode(http.StatusBadRequest)
-				ctx.Logger().Printf("can't add %+v: %s\n%s", v, err.Error(), body)
+				ctx.Logger().Printf("can't add %+v: %s\nBody:\n%s", v, err.Error(), body)
 				return
 			}
 
