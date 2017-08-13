@@ -23,10 +23,10 @@ func (db *DB) UpdateUser(v models.User) {
 		for i := range userLocations {
 			lm := db.GetLocationMarks(i)
 			lm.M.Lock()
-			for _, i := range lm.Marks {
-				if i.User == v.ID {
-					i.BirthDate = time.Unix(v.BirthDate, 0)
-					i.Gender = []byte(v.Gender)[0]
+			for i := range lm.Marks {
+				if lm.Marks[i].User == v.ID {
+					lm.Marks[i].BirthDate = time.Unix(v.BirthDate, 0)
+					lm.Marks[i].Gender = []byte(v.Gender)[0]
 				}
 			}
 			lm.M.Unlock()
@@ -54,11 +54,11 @@ func (db *DB) UpdateLocation(v models.Location) {
 				continue
 			}
 			uv.M.Lock()
-			for _, i := range uv.Visits {
-				if i.Location == v.ID {
-					i.Place = v.Place
-					i.Country = v.Country
-					i.Distance = v.Distance
+			for i := range uv.Visits {
+				if uv.Visits[i].Location == v.ID {
+					uv.Visits[i].Place = v.Place
+					uv.Visits[i].Country = v.Country
+					uv.Visits[i].Distance = v.Distance
 				}
 			}
 			uv.M.Unlock()
@@ -92,25 +92,38 @@ func (db *DB) UpdateVisit(v models.Visit) {
 		db.GetLocationMarks(v.Location).Add(mark)
 	}
 
+	user := db.GetUser(v.User)
 	lm := db.GetLocationMarks(v.Location)
 	lm.M.Lock()
-	for i := range lm.Marks {
-		if lm.Marks[i].Visit == v.ID {
-			lm.Marks[i].User = v.User
-			lm.Marks[i].VisitedAt = v.VisitedAt
-			lm.Marks[i].Mark = v.Mark
+	for n, i := range lm.Marks {
+		if i.Visit == v.ID {
+			lm.Marks[n] = models.LocationMark{
+				Visit:     v.ID,
+				User:      v.User,
+				VisitedAt: v.VisitedAt,
+				BirthDate: time.Unix(user.BirthDate, 0),
+				Mark:      v.Mark,
+				Gender:    []byte(user.Gender)[0],
+			}
 			break
 		}
 	}
 	lm.M.Unlock()
 
+	location := db.GetLocation(v.Location)
 	uv := db.GetUserVisits(v.User)
 	uv.M.Lock()
-	for i := range uv.Visits {
-		if uv.Visits[i].Visit == v.ID {
-			uv.Visits[i].Mark = v.Mark
-			uv.Visits[i].VisitedAt = v.VisitedAt
-			uv.Visits[i].Location = v.Location
+	for n, i := range uv.Visits {
+		if i.Visit == v.ID {
+			uv.Visits[n] = models.UserVisit{
+				Visit:     v.ID,
+				Location:  v.Location,
+				Mark:      v.Mark,
+				VisitedAt: v.VisitedAt,
+				Place:     location.Place,
+				Country:   location.Country,
+				Distance:  location.Distance,
+			}
 			break
 		}
 	}

@@ -92,11 +92,11 @@ func (app Application) RequestHandler(ctx *fasthttp.RequestCtx) {
 		body := ctx.PostBody()
 
 		// XXX: some email's could contain the null string... but hopefully - not :-)
-		if bytes.Contains(body, []byte("null")) {
-			ctx.Logger().Printf("found null value: %s", body)
-			status = http.StatusBadRequest
-			break
-		}
+		//if bytes.Contains(body, []byte("null")) {
+		//	ctx.Logger().Printf("found null value: %s", body)
+		//	status = http.StatusBadRequest
+		//	break
+		//}
 
 		if string(parts[2]) == "new" {
 			status = app.postEntityNew(ctx, string(parts[1]), body)

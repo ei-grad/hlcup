@@ -38,7 +38,7 @@ publish: docker
 
 clean:
 	go clean ./... github.com/ei-grad/hlcup/...
-	rm -rf hlcup models/ffjson-* $(GENERATED)
+	rm -rf hlcup models/ffjson-inception* models/*_ffjson_expose.go $(GENERATED)
 
 watch: $(GENERATED)
 	iwatch "go build -race -o debug && ./debug -b :8000 -url http://127.0.0.1:8000 -data data/data.zip -v"
