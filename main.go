@@ -24,10 +24,7 @@ func main() {
 		h = accessLogHandler(h)
 	}
 
-	loader := &Loader{
-		baseURL:  *loaderBaseURL,
-		fileName: *dataFileName,
-	}
+	loader := NewLoader(*loaderBaseURL, *dataFileName)
 
 	go loader.LoadData()
 
