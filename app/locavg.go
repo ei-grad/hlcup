@@ -109,7 +109,7 @@ func filterLocationMarkFromAge(t time.Time) LocationMarkFilter {
 
 func filterLocationMarkToAge(t time.Time) LocationMarkFilter {
 	return func(v models.LocationMark) bool {
-		return v.BirthDate.After(t)
+		return !v.BirthDate.Before(t)
 	}
 }
 
