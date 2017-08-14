@@ -3,8 +3,12 @@ package main
 import (
 	"flag"
 	"log"
+	"time"
 
 	"github.com/valyala/fasthttp"
+
+	"github.com/ei-grad/hlcup/app"
+	"github.com/ei-grad/hlcup/loader"
 )
 
 func main() {
@@ -13,20 +17,20 @@ func main() {
 	address := flag.String("b", ":80", "bind address")
 	loaderBaseURL := flag.String("url", "http://localhost", "base URL (for loader)")
 	dataFileName := flag.String("data", "/tmp/data/data.zip", "data file name")
+	loaderWorkers := flag.Int("loader-workers", 8, "number of parallel requests while loading data")
 
 	flag.Parse()
 
-	app := NewApplication()
-
-	h := app.RequestHandler
+	h := app.NewApplication().RequestHandler
 
 	if *accessLog {
 		h = accessLogHandler(h)
 	}
 
-	loader := NewLoader(*loaderBaseURL, *dataFileName)
-
-	go loader.LoadData()
+	go func() {
+		time.Sleep(1 * time.Second)
+		loader.LoadData(*loaderBaseURL, *dataFileName, *loaderWorkers)
+	}()
 
 	if err := fasthttp.ListenAndServe(*address, h); err != nil {
 		log.Fatalf("Error in ListenAndServe: %s", err)

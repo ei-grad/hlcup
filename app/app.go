@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"bytes"
@@ -33,7 +33,7 @@ func parseUint32(s []byte) (uint32, error) {
 // logic
 func (app Application) RequestHandler(ctx *fasthttp.RequestCtx) {
 
-	ctx.SetContentType(strApplicationJSON)
+	ctx.SetContentType("application/json; charset=utf8")
 
 	parts := bytes.SplitN(ctx.Path(), []byte("/"), 4)
 
@@ -45,7 +45,7 @@ func (app Application) RequestHandler(ctx *fasthttp.RequestCtx) {
 
 	switch string(ctx.Method()) {
 
-	case strGet:
+	case "GET":
 		switch len(parts) {
 		case 3:
 			if string(parts[2]) == "new" {
@@ -75,7 +75,7 @@ func (app Application) RequestHandler(ctx *fasthttp.RequestCtx) {
 		default:
 			status = http.StatusNotFound
 		}
-	case strPost:
+	case "POST":
 
 		// To fix the "Empty response" error in yandex-tank logs we have to send
 		// "Connection: close" for POST requests.

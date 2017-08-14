@@ -1,4 +1,4 @@
-package main
+package loader
 
 import (
 	"archive/zip"
@@ -9,29 +9,43 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/pquerna/ffjson/ffjson"
 	"github.com/valyala/fasthttp"
 
 	"github.com/ei-grad/hlcup/models"
 )
 
-type Loader struct {
+type task struct {
+	url  string
+	body []byte
+}
+
+type loader struct {
 	baseURL, fileName string
 	wg                sync.WaitGroup
-	limit             chan struct{}
+	nWorkers          int
 	countUsers        int64
 	countLocations    int64
 	countVisits       int64
 }
 
-func NewLoader(baseURL, fileName string) *Loader {
-	return &Loader{
+func LoadData(baseURL, fileName string, nWorkers int) {
+	l := &loader{
 		baseURL:  baseURL,
 		fileName: fileName,
-		limit:    make(chan struct{}, 8),
+		nWorkers: nWorkers,
 	}
+	l.loadData()
 }
 
-func (l *Loader) LoadData() {
+func (l *loader) loadData() {
+
+	tasks := make(chan task)
+	defer close(tasks)
+
+	for i := 0; i < l.nWorkers; i++ {
+		go l.worker(tasks)
+	}
 
 	// Open a zip archive for reading.
 	r, err := zip.OpenReader(l.fileName)
@@ -40,16 +54,13 @@ func (l *Loader) LoadData() {
 	}
 	defer r.Close()
 
-	// Wait for a server to start
-	time.Sleep(1 * time.Second)
-
 	log.Printf("loader: starting")
 
 	t0 := time.Now()
 
 	for _, f := range r.File {
 		l.wg.Add(1)
-		go l.loadFile(f, 1)
+		go l.loadFile(f, 1, tasks)
 	}
 
 	l.wg.Wait()
@@ -59,7 +70,7 @@ func (l *Loader) LoadData() {
 
 	for _, f := range r.File {
 		l.wg.Add(1)
-		go l.loadFile(f, 2)
+		go l.loadFile(f, 2, tasks)
 	}
 
 	l.wg.Wait()
@@ -72,7 +83,7 @@ func (l *Loader) LoadData() {
 
 }
 
-func (l *Loader) loadFile(f *zip.File, stage int) {
+func (l *loader) loadFile(f *zip.File, stage int, tasks chan task) {
 
 	defer l.wg.Done()
 
@@ -123,21 +134,21 @@ func (l *Loader) loadFile(f *zip.File, stage int) {
 		var constructor func() Entity
 
 		switch key {
-		case strUsers:
+		case "users":
 			if stage == 1 {
 				constructor = func() Entity {
 					atomic.AddInt64(&l.countUsers, 1)
 					return &models.User{}
 				}
 			}
-		case strLocations:
+		case "locations":
 			if stage == 1 {
 				constructor = func() Entity {
 					atomic.AddInt64(&l.countLocations, 1)
 					return &models.Location{}
 				}
 			}
-		case strVisits:
+		case "visits":
 			if stage == 2 {
 				constructor = func() Entity {
 					atomic.AddInt64(&l.countVisits, 1)
@@ -162,32 +173,39 @@ func (l *Loader) loadFile(f *zip.File, stage int) {
 			if err != nil {
 				log.Fatalf("loader: can't encode %+v back: %s", v, err)
 			}
-			l.limit <- struct{}{}
 			l.wg.Add(1)
-			go l.sendPost(fmt.Sprintf("%s/%s/new", l.baseURL, key), body)
+			tasks <- task{
+				url:  fmt.Sprintf("%s/%s/new", l.baseURL, key),
+				body: body,
+			}
 		}
 	}
 
 }
 
-func (l *Loader) sendPost(url string, body []byte) {
+func (l *loader) worker(tasks chan task) {
+	for i := range tasks {
+		l.sendPost(i.url, i.body)
+		l.wg.Done()
+	}
+}
 
-	defer l.wg.Done()
+func (l *loader) sendPost(url string, body []byte) {
+
+	defer ffjson.Pool(body)
 
 	req := fasthttp.AcquireRequest()
 	defer fasthttp.ReleaseRequest(req)
 
-	req.Header.SetMethod(strPost)
+	req.Header.SetMethod("POST")
 	req.SetRequestURI(url)
-	req.Header.SetContentType(strApplicationJSON)
+	req.Header.SetContentType("application/json")
 	req.SetBody(body)
 
 	resp := fasthttp.AcquireResponse()
 	defer fasthttp.ReleaseResponse(resp)
 
 	err := fasthttp.Do(req, resp)
-
-	<-l.limit
 
 	if err != nil {
 		log.Fatalf("loader: can't send request: %s", err)
