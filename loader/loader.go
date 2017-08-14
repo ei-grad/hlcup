@@ -133,35 +133,28 @@ func (l *loader) loadFile(f *zip.File, stage int, tasks chan task) {
 		var v Entity
 		var constructor func() Entity
 
-		switch key {
-		case "users":
-			if stage == 1 {
-				constructor = func() Entity {
-					atomic.AddInt64(&l.countUsers, 1)
-					return &models.User{}
-				}
+		switch {
+		case key == "users" && stage == 1:
+			constructor = func() Entity {
+				atomic.AddInt64(&l.countUsers, 1)
+				return &models.User{}
 			}
-		case "locations":
-			if stage == 1 {
-				constructor = func() Entity {
-					atomic.AddInt64(&l.countLocations, 1)
-					return &models.Location{}
-				}
+		case key == "locations" && stage == 1:
+			constructor = func() Entity {
+				atomic.AddInt64(&l.countLocations, 1)
+				return &models.Location{}
 			}
-		case "visits":
-			if stage == 2 {
-				constructor = func() Entity {
-					atomic.AddInt64(&l.countVisits, 1)
-					return &models.Visit{}
-				}
+		case key == "visits" && stage == 2:
+			constructor = func() Entity {
+				atomic.AddInt64(&l.countVisits, 1)
+				return &models.Visit{}
 			}
-		}
-
-		if constructor == nil {
+		default:
+			log.Printf("loader: %s: unknown section '%s', ignoring the remaining contents", f.Name, key)
 			return
 		}
 
-		log.Printf("loader: loading %s from %s...", key, f.Name)
+		log.Printf("loader: %s: loading %s", f.Name, key)
 
 		for decoder.More() {
 			v = constructor()
