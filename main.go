@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"log"
+	"syscall"
 	"time"
 
 	"github.com/valyala/fasthttp"
@@ -26,6 +27,8 @@ func main() {
 	if *accessLog {
 		h = accessLogHandler(h)
 	}
+
+	syscall.Mlockall(syscall.MCL_CURRENT | syscall.MCL_FUTURE)
 
 	go func() {
 		time.Sleep(1 * time.Second)
