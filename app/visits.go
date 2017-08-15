@@ -9,6 +9,14 @@ import (
 	"github.com/ei-grad/hlcup/models"
 )
 
+type UserVisitFilterData struct {
+	fromDateIsSet bool
+	fromDate      int
+	toDateIsSet   bool
+	toDate        int
+	filter        UserVisitFilter
+}
+
 type UserVisitFilter func(models.UserVisit) bool
 
 // GetVisitsFilter validates query args and returns a function to filter
@@ -23,7 +31,7 @@ type UserVisitFilter func(models.UserVisit) bool
 //     toDistance - возвращать только те места, у которых
 //                  расстояние от города меньше этого параметра
 //
-func GetVisitsFilter(args *fasthttp.Args) (ret UserVisitFilter, err error) {
+func GetVisitsFilter(args *fasthttp.Args) (ret UserVisitFilterData, err error) {
 
 	var filters []UserVisitFilter
 
@@ -31,18 +39,20 @@ func GetVisitsFilter(args *fasthttp.Args) (ret UserVisitFilter, err error) {
 	if fromDateRaw != nil {
 		fromDate, err := strconv.Atoi(string(fromDateRaw))
 		if err != nil {
-			return nil, fmt.Errorf("invalid fromDate: %s", err)
+			return ret, fmt.Errorf("invalid fromDate: %s", err)
 		}
-		filters = append(filters, filterUserVisitFromDate(fromDate))
+		ret.fromDateIsSet = true
+		ret.fromDate = fromDate
 	}
 
 	toDateRaw := args.Peek("toDate")
 	if toDateRaw != nil {
 		toDate, err := strconv.Atoi(string(toDateRaw))
 		if err != nil {
-			return nil, fmt.Errorf("invalid toDate: %s", err)
+			return ret, fmt.Errorf("invalid toDate: %s", err)
 		}
-		filters = append(filters, filterUserVisitToDate(toDate))
+		ret.toDateIsSet = true
+		ret.toDate = toDate
 	}
 
 	countryRaw := args.Peek("country")
@@ -54,12 +64,12 @@ func GetVisitsFilter(args *fasthttp.Args) (ret UserVisitFilter, err error) {
 	if toDistanceRaw != nil {
 		toDistance, err := strconv.ParseUint(string(toDistanceRaw), 10, 32)
 		if err != nil {
-			return nil, fmt.Errorf("invalid toDistance: %s", err)
+			return ret, fmt.Errorf("invalid toDistance: %s", err)
 		}
 		filters = append(filters, filterUserVisitToDistance(uint32(toDistance)))
 	}
 
-	ret = func(v models.UserVisit) bool {
+	ret.filter = func(v models.UserVisit) bool {
 		for _, i := range filters {
 			if !i(v) {
 				return false
@@ -71,13 +81,13 @@ func GetVisitsFilter(args *fasthttp.Args) (ret UserVisitFilter, err error) {
 	return ret, nil
 }
 
-func filterUserVisitFromDate(t int) UserVisitFilter {
+func searchUserVisitFromDate(t int) UserVisitFilter {
 	return func(v models.UserVisit) bool {
 		return v.VisitedAt > t
 	}
 }
 
-func filterUserVisitToDate(t int) UserVisitFilter {
+func searchUserVisitToDate(t int) UserVisitFilter {
 	return func(v models.UserVisit) bool {
 		return v.VisitedAt < t
 	}

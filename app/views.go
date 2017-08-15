@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sort"
 
 	"github.com/valyala/fasthttp"
 
@@ -64,9 +65,24 @@ func (app *Application) getUserVisits(ctx *fasthttp.RequestCtx, id uint32) int {
 
 	visits := app.db.GetUserVisits(id)
 	visits.M.RLock()
-	for _, i := range visits.Visits {
+	v := visits.Visits
+	if filter.fromDateIsSet {
+		i := sort.Search(len(v), func(i int) bool { return v[i].VisitedAt > filter.fromDate })
+		if i < len(v) {
+			v = v[i:]
+		} else {
+			v = v[:0]
+		}
+	}
+	if filter.toDateIsSet {
+		i := sort.Search(len(v), func(i int) bool { return v[i].VisitedAt >= filter.toDate })
+		if i < len(v) {
+			v = v[:i]
+		}
+	}
+	for _, i := range v {
 		// TODO: implement /users/<id>/visits filters
-		if !filter(i) {
+		if !filter.filter(i) {
 			continue
 		}
 		if !first {
