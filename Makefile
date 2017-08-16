@@ -32,8 +32,10 @@ generated: $(GENERATED)
 hlcup: *.go */*.go $(GENERATED)
 	CGO_ENABLED=0 go build -ldflags="-s -w"
 
+DATADIR = train
+
 run: docker
-	docker run -it --rm --net=host -v $$PWD/data:/tmp/data $(IMAGE) ./hlcup $(ARGS)
+	docker run -it --rm --net=host -v `realpath $(DATADIR)`:/tmp/data $(IMAGE) ./hlcup $(ARGS)
 
 publish: docker
 	docker push $(IMAGE)

@@ -1,4 +1,6 @@
-/data
+/train
+/full
+/logs
 /hlcup
 *_ffjson.go
 *_cmap.go
