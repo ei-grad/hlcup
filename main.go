@@ -9,6 +9,7 @@ import (
 	"github.com/valyala/fasthttp"
 
 	"github.com/ei-grad/hlcup/app"
+	"github.com/ei-grad/hlcup/heater"
 	"github.com/ei-grad/hlcup/loader"
 )
 
@@ -33,6 +34,7 @@ func main() {
 	go func() {
 		time.Sleep(1 * time.Second)
 		loader.LoadData(*loaderBaseURL, *dataFileName, *loaderWorkers)
+		heater.RunHeater(*loaderBaseURL, *dataFileName, *loaderWorkers)
 	}()
 
 	if err := fasthttp.ListenAndServe(*address, h); err != nil {
