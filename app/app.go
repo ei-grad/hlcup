@@ -2,8 +2,11 @@ package app
 
 import (
 	"bytes"
+	"log"
 	"net/http"
 	"strconv"
+	"sync/atomic"
+	"time"
 
 	"github.com/valyala/fasthttp"
 
@@ -12,13 +15,16 @@ import (
 
 // Application implements application logic
 type Application struct {
-	db *db.DB
+	db            *db.DB
+	countRequests int64
 }
 
 // NewApplication creates new Application
-func NewApplication() (app Application) {
+func NewApplication() *Application {
+	var app Application
 	app.db = db.New()
-	return
+	go app.rpsWatcher()
+	return &app
 }
 
 func parseUint32(s []byte) (uint32, error) {
@@ -29,9 +35,22 @@ func parseUint32(s []byte) (uint32, error) {
 	return uint32(parsed), nil
 }
 
+func (app *Application) rpsWatcher() {
+	for {
+		time.Sleep(1 * time.Second)
+		count := atomic.LoadInt64(&app.countRequests)
+		if count > 0 {
+			log.Printf("RPS: %d", count)
+			atomic.SwapInt64(&app.countRequests, 0)
+		}
+	}
+}
+
 // RequestHandler contains implementation of all routes and most of application
 // logic
-func (app Application) RequestHandler(ctx *fasthttp.RequestCtx) {
+func (app *Application) RequestHandler(ctx *fasthttp.RequestCtx) {
+
+	atomic.AddInt64(&app.countRequests, 1)
 
 	ctx.SetContentType("application/json; charset=utf8")
 
