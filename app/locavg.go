@@ -65,7 +65,7 @@ func GetMarksFilter(args *fasthttp.Args) (ret LocationMarkFilter, err error) {
 			return nil, fmt.Errorf("invalid toAge: %s", err)
 		}
 		t := time.Now()
-		t = time.Date(t.Year()-int(toAge), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
+		t = time.Date(t.Year()-int(toAge)-1, t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
 		filters = append(filters, filterLocationMarkToAge(t))
 	}
 
