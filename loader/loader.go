@@ -204,7 +204,7 @@ func (l *loader) sendPost(url string, body []byte) {
 	}
 
 	if resp.StatusCode() != 200 {
-		log.Fatalf("loader: LOAD FAILED! Got non-200 response:\n%s", resp)
+		log.Fatalf("loader: got non-200 response:\n%s", resp)
 	}
 
 }
