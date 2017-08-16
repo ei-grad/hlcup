@@ -53,7 +53,7 @@ func (app Application) RequestHandler(ctx *fasthttp.RequestCtx) {
 			} else if id, err = parseUint32(parts[2]); err != nil {
 				status = http.StatusNotFound
 			} else {
-				status = app.getEntity(ctx, string(parts[1]), id)
+				status = app.GetEntity(ctx, string(parts[1]), id)
 			}
 		case 4:
 			if id, err = parseUint32(parts[2]); err != nil {
@@ -63,11 +63,11 @@ func (app Application) RequestHandler(ctx *fasthttp.RequestCtx) {
 				tail := string(parts[3])
 				switch {
 				case entity == "users" && tail == "visits":
-					status = app.getUserVisits(ctx, id, ctx.QueryArgs())
+					status = app.GetUserVisits(ctx, id, ctx.QueryArgs())
 				case entity == "locations" && tail == "avg":
-					status = app.getLocationAvg(ctx, id, ctx.QueryArgs())
+					status = app.GetLocationAvg(ctx, id, ctx.QueryArgs())
 				case entity == "locations" && tail == "marks":
-					status = app.getLocationMarks(ctx, id)
+					status = app.GetLocationMarks(ctx, id)
 				default:
 					status = http.StatusNotFound
 				}
@@ -99,13 +99,13 @@ func (app Application) RequestHandler(ctx *fasthttp.RequestCtx) {
 		//}
 
 		if string(parts[2]) == "new" {
-			status = app.postEntityNew(ctx, string(parts[1]), body)
+			status = app.PostEntityNew(string(parts[1]), body)
 		} else {
 			if id, err = parseUint32(parts[2]); err != nil {
 				status = http.StatusNotFound
 				break
 			}
-			status = app.postEntity(ctx, string(parts[1]), id, body)
+			status = app.PostEntity(string(parts[1]), id, body)
 		}
 
 	default:

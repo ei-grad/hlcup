@@ -10,7 +10,7 @@ import (
 	"github.com/ei-grad/hlcup/models"
 )
 
-func (app *Application) getEntity(w io.Writer, entity string, id uint32) int {
+func (app *Application) GetEntity(w io.Writer, entity string, id uint32) int {
 
 	var v interface {
 		IsValid() bool
@@ -47,7 +47,7 @@ func (app *Application) getEntity(w io.Writer, entity string, id uint32) int {
 
 }
 
-func (app *Application) getUserVisits(w io.Writer, id uint32, args Peeker) int {
+func (app *Application) GetUserVisits(w io.Writer, id uint32, args Peeker) int {
 
 	if !app.db.GetUser(id).IsValid() {
 		return http.StatusNotFound
@@ -97,7 +97,7 @@ func (app *Application) getUserVisits(w io.Writer, id uint32, args Peeker) int {
 	return http.StatusOK
 }
 
-func (app *Application) getLocationAvg(w io.Writer, id uint32, args Peeker) int {
+func (app *Application) GetLocationAvg(w io.Writer, id uint32, args Peeker) int {
 
 	if !app.db.GetLocation(id).IsValid() {
 		return http.StatusNotFound
@@ -134,7 +134,7 @@ func (app *Application) getLocationAvg(w io.Writer, id uint32, args Peeker) int 
 	return http.StatusOK
 }
 
-func (app *Application) getLocationMarks(w io.Writer, id uint32) int {
+func (app *Application) GetLocationMarks(w io.Writer, id uint32) int {
 
 	if !app.db.GetLocation(id).IsValid() {
 		return http.StatusNotFound
@@ -161,7 +161,7 @@ func (app *Application) getLocationMarks(w io.Writer, id uint32) int {
 	return http.StatusOK
 }
 
-func (app *Application) postEntityNew(w io.Writer, entity string, body []byte) int {
+func (app *Application) PostEntityNew(entity string, body []byte) int {
 
 	var v interface {
 		UnmarshalJSON([]byte) error
@@ -203,7 +203,7 @@ func (app *Application) postEntityNew(w io.Writer, entity string, body []byte) i
 	return http.StatusOK
 }
 
-func (app *Application) postEntity(w io.Writer, entity string, id uint32, body []byte) int {
+func (app *Application) PostEntity(entity string, id uint32, body []byte) int {
 
 	var (
 		v interface {
