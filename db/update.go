@@ -49,10 +49,7 @@ func (db *DB) UpdateLocation(v models.Location) {
 		}
 		lm.M.RUnlock()
 		for i := range locationUsers {
-			uv := db.userVisits.Get(i)
-			if uv == nil {
-				continue
-			}
+			uv := db.GetUserVisits(i)
 			uv.M.Lock()
 			for i := range uv.Visits {
 				if uv.Visits[i].Location == v.ID {
