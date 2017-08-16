@@ -11,7 +11,7 @@ func (app *Application) heat(entity string, id uint32) {
 	buf := fasthttp.AcquireByteBuffer()
 	defer fasthttp.ReleaseByteBuffer(buf)
 	if status := app.GetEntity(buf, entity, id); status != 200 {
-		log.Printf("heat: got non-200 response: GET /%s/%d", entity, id)
+		log.Fatalf("heat: got non-200 response: GET /%s/%d", entity, id)
 	}
 
 	args := fasthttp.AcquireArgs()
@@ -20,11 +20,11 @@ func (app *Application) heat(entity string, id uint32) {
 	switch entity {
 	case strUsers:
 		if status := app.GetUserVisits(buf, id, args); status != 200 {
-			log.Printf("heat: got non-200 response: GET /users/%d/visits", id)
+			log.Fatalf("heat: got non-200 response: GET /users/%d/visits", id)
 		}
 	case strLocations:
 		if status := app.GetLocationAvg(buf, id, args); status != 200 {
-			log.Printf("heat: got non-200 response: GET /locations/%d/marks", id)
+			log.Fatalf("heat: got non-200 response: GET /locations/%d/marks", id)
 		}
 	}
 }
