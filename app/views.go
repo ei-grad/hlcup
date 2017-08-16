@@ -198,6 +198,8 @@ func (app *Application) postEntityNew(w io.Writer, entity string, body []byte) i
 		return http.StatusBadRequest
 	}
 
+	app.heat(entity, v.GetID())
+
 	return http.StatusOK
 }
 
@@ -267,6 +269,8 @@ func (app *Application) postEntity(w io.Writer, entity string, id uint32, body [
 	case strVisits:
 		app.db.UpdateVisit(visit)
 	}
+
+	app.heat(entity, id)
 
 	return http.StatusOK
 }
