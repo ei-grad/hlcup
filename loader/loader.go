@@ -150,7 +150,6 @@ func (l *loader) loadFile(f *zip.File, stage int, tasks chan task) {
 				return &models.Visit{}
 			}
 		default:
-			log.Printf("loader: %s: unknown section '%s', ignoring the remaining contents", f.Name, key)
 			return
 		}
 

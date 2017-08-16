@@ -189,15 +189,12 @@ func (app *Application) postEntityNew(w io.Writer, entity string, body []byte) i
 	}
 
 	if err := v.UnmarshalJSON(body); err != nil {
-		ctx.Logger().Printf(err.Error())
 		return http.StatusBadRequest
 	}
 	if err := v.Validate(); err != nil {
-		ctx.Logger().Printf("validate failed: %s", err.Error())
 		return http.StatusBadRequest
 	}
 	if err := saver(); err != nil {
-		ctx.Logger().Printf("can't add %+v: %s\nBody:\n%s", v, err.Error(), body)
 		return http.StatusBadRequest
 	}
 
