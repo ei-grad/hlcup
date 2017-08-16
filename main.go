@@ -3,6 +3,8 @@ package main
 import (
 	"flag"
 	"log"
+	"os"
+	"runtime"
 	"syscall"
 	"time"
 
@@ -12,7 +14,12 @@ import (
 	"github.com/ei-grad/hlcup/loader"
 )
 
+var appVersion, appBuildDate string
+
 func main() {
+
+	log.Printf("HighLoad Cup solution by Andrew Grigorev <andrew@ei-grad.ru>")
+	log.Printf("Version %s built %s, %s", appVersion, appBuildDate, runtime.Version())
 
 	accessLog := flag.Bool("v", false, "show access log")
 	address := flag.String("b", ":80", "bind address")
@@ -21,6 +28,13 @@ func main() {
 	loaderWorkers := flag.Int("loader-workers", 8, "number of parallel requests while loading data")
 
 	flag.Parse()
+
+	rlimit()
+	memstats()
+
+	if os.Getenv("RUN_TOP") == "1" {
+		go top()
+	}
 
 	h := app.NewApplication().RequestHandler
 

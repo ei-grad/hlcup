@@ -29,8 +29,13 @@ $(GENERATED): models/entities.go models/indexes.go
 
 generated: $(GENERATED)
 
-hlcup: *.go */*.go $(GENERATED)
-	CGO_ENABLED=0 go build -ldflags="-s -w"
+DATE = $(shell LANG=C date --iso)
+APP_VERSION = $(shell git describe --tags)
+LDFLAGS = '-s -w -X main.appVersion=$(APP_VERSION) -X main.appBuildDate=$(DATE)'
+SOURCES = $(wildcard *.go */*.go)
+
+hlcup: $(SOURCES) $(GENERATED)
+	CGO_ENABLED=0 go build -ldflags=$(LDFLAGS)
 
 DATADIR = train
 

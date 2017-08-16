@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func init() {
+func memstats() {
 	var memstats runtime.MemStats
 	if os.Getenv("DEBUG_MEMSTATS") != "1" {
 		return
