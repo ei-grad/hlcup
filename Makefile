@@ -1,9 +1,11 @@
 .PHONY: clean run generated fixlinter watch publish
 
+IMAGE = stor.highloadcup.ru/travels/raccoon_shooter
+
 all: fixlinter hlcup
 
 docker: hlcup Dockerfile
-	docker build -t stor.highloadcup.ru/travels/raccoon_shooter .
+	docker build -t $(IMAGE) .
 	touch docker
 
 fixlinter: generated
@@ -31,10 +33,10 @@ hlcup: *.go */*.go $(GENERATED)
 	CGO_ENABLED=0 go build -ldflags="-s -w"
 
 run: docker
-	docker run -it --rm --net=host -v $$PWD/data:/tmp/data stor.highloadcup.ru/travels/raccoon_shooter ./hlcup $(ARGS)
+	docker run -it --rm --net=host -v $$PWD/data:/tmp/data $(IMAGE) ./hlcup $(ARGS)
 
 publish: docker
-	docker push stor.highloadcup.ru/travels/raccoon_shooter
+	docker push $(IMAGE)
 
 clean:
 	go clean ./... github.com/ei-grad/hlcup/...
