@@ -3,15 +3,14 @@ package app
 import (
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"sort"
-
-	"github.com/valyala/fasthttp"
 
 	"github.com/ei-grad/hlcup/models"
 )
 
-func (app *Application) getEntity(ctx *fasthttp.RequestCtx, entity string, id uint32) int {
+func (app *Application) getEntity(w io.Writer, entity string, id uint32) int {
 
 	var v interface {
 		IsValid() bool
@@ -42,26 +41,26 @@ func (app *Application) getEntity(ctx *fasthttp.RequestCtx, entity string, id ui
 		panic(err)
 	}
 
-	ctx.Write(resp)
+	w.Write(resp)
 
 	return http.StatusOK
 
 }
 
-func (app *Application) getUserVisits(ctx *fasthttp.RequestCtx, id uint32) int {
+func (app *Application) getUserVisits(w io.Writer, id uint32, args Peeker) int {
 
 	if !app.db.GetUser(id).IsValid() {
 		return http.StatusNotFound
 	}
 
-	filter, err := GetVisitsFilter(ctx.QueryArgs())
+	filter, err := GetVisitsFilter(args)
 	if err != nil {
 		return http.StatusBadRequest
 	}
 
 	first := true
 
-	ctx.WriteString(`{"visits":[`)
+	io.WriteString(w, `{"visits":[`)
 
 	visits := app.db.GetUserVisits(id)
 	visits.M.RLock()
@@ -81,31 +80,30 @@ func (app *Application) getUserVisits(ctx *fasthttp.RequestCtx, id uint32) int {
 		}
 	}
 	for _, i := range v {
-		// TODO: implement /users/<id>/visits filters
 		if !filter.filter(i) {
 			continue
 		}
 		if !first {
-			ctx.WriteString(",")
+			io.WriteString(w, ",")
 		}
 		tmp, _ := i.MarshalJSON()
-		ctx.Write(tmp)
+		w.Write(tmp)
 		first = false
 	}
 	visits.M.RUnlock()
 
-	ctx.WriteString("]}")
+	io.WriteString(w, "]}")
 
 	return http.StatusOK
 }
 
-func (app *Application) getLocationAvg(ctx *fasthttp.RequestCtx, id uint32) int {
+func (app *Application) getLocationAvg(w io.Writer, id uint32, args Peeker) int {
 
 	if !app.db.GetLocation(id).IsValid() {
 		return http.StatusNotFound
 	}
 
-	filter, err := GetMarksFilter(ctx.QueryArgs())
+	filter, err := GetMarksFilter(args)
 	if err != nil {
 		return http.StatusBadRequest
 	}
@@ -131,12 +129,12 @@ func (app *Application) getLocationAvg(ctx *fasthttp.RequestCtx, id uint32) int 
 		avg = float64(sum) / float64(count)
 	}
 
-	ctx.WriteString(fmt.Sprintf(`{"avg": %.5f}`, avg))
+	io.WriteString(w, fmt.Sprintf(`{"avg": %.5f}`, avg))
 
 	return http.StatusOK
 }
 
-func (app *Application) getLocationMarks(ctx *fasthttp.RequestCtx, id uint32) int {
+func (app *Application) getLocationMarks(w io.Writer, id uint32) int {
 
 	if !app.db.GetLocation(id).IsValid() {
 		return http.StatusNotFound
@@ -144,30 +142,31 @@ func (app *Application) getLocationMarks(ctx *fasthttp.RequestCtx, id uint32) in
 
 	first := true
 
-	ctx.WriteString(`{"marks":[`)
+	io.WriteString(w, `{"marks":[`)
 
 	marks := app.db.GetLocationMarks(id)
 	marks.M.RLock()
 	for _, i := range marks.Marks {
 		if !first {
-			ctx.WriteString(",")
+			io.WriteString(w, ",")
 		}
 		tmp, _ := i.MarshalJSON()
-		ctx.Write(tmp)
+		w.Write(tmp)
 		first = false
 	}
 	marks.M.RUnlock()
 
-	ctx.WriteString("]}")
+	io.WriteString(w, "]}")
 
 	return http.StatusOK
 }
 
-func (app *Application) postEntityNew(ctx *fasthttp.RequestCtx, entity string, body []byte) int {
+func (app *Application) postEntityNew(w io.Writer, entity string, body []byte) int {
 
 	var v interface {
 		UnmarshalJSON([]byte) error
 		Validate() error
+		GetID() uint32
 	}
 
 	var saver func() error
@@ -205,7 +204,7 @@ func (app *Application) postEntityNew(ctx *fasthttp.RequestCtx, entity string, b
 	return http.StatusOK
 }
 
-func (app *Application) postEntity(ctx *fasthttp.RequestCtx, entity string, id uint32, body []byte) int {
+func (app *Application) postEntity(w io.Writer, entity string, id uint32, body []byte) int {
 
 	var (
 		v interface {

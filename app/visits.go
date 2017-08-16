@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/valyala/fasthttp"
-
 	"github.com/ei-grad/hlcup/models"
 )
 
@@ -31,7 +29,7 @@ type UserVisitFilter func(models.UserVisit) bool
 //     toDistance - возвращать только те места, у которых
 //                  расстояние от города меньше этого параметра
 //
-func GetVisitsFilter(args *fasthttp.Args) (ret UserVisitFilterData, err error) {
+func GetVisitsFilter(args Peeker) (ret UserVisitFilterData, err error) {
 
 	var filters []UserVisitFilter
 

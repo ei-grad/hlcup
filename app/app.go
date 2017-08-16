@@ -63,9 +63,9 @@ func (app Application) RequestHandler(ctx *fasthttp.RequestCtx) {
 				tail := string(parts[3])
 				switch {
 				case entity == "users" && tail == "visits":
-					status = app.getUserVisits(ctx, id)
+					status = app.getUserVisits(ctx, id, ctx.QueryArgs())
 				case entity == "locations" && tail == "avg":
-					status = app.getLocationAvg(ctx, id)
+					status = app.getLocationAvg(ctx, id, ctx.QueryArgs())
 				case entity == "locations" && tail == "marks":
 					status = app.getLocationMarks(ctx, id)
 				default:

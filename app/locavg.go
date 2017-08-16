@@ -5,10 +5,12 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/valyala/fasthttp"
-
 	"github.com/ei-grad/hlcup/models"
 )
+
+type Peeker interface {
+	Peek(string) []byte
+}
 
 type LocationMarkFilter func(models.LocationMark) bool
 
@@ -25,7 +27,7 @@ type LocationMarkFilter func(models.LocationMark) bool
 //     toAge - как предыдущее, но наоборот
 //     gender - учитывать оценки только мужчин или женщин
 //
-func GetMarksFilter(args *fasthttp.Args) (ret LocationMarkFilter, err error) {
+func GetMarksFilter(args Peeker) (ret LocationMarkFilter, err error) {
 
 	var filters []LocationMarkFilter
 
@@ -65,7 +67,7 @@ func GetMarksFilter(args *fasthttp.Args) (ret LocationMarkFilter, err error) {
 			return nil, fmt.Errorf("invalid toAge: %s", err)
 		}
 		t := time.Now()
-		t = time.Date(t.Year()-int(toAge)-1, t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
+		t = time.Date(t.Year()-int(toAge), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
 		filters = append(filters, filterLocationMarkToAge(t))
 	}
 

@@ -32,6 +32,10 @@ type User struct {
 	Valid bool `json:"-"`
 }
 
+func (v *User) GetID() uint32 {
+	return v.ID
+}
+
 func (v *User) Validate() error {
 	switch {
 	case v.ID == 0:
@@ -78,6 +82,10 @@ type Location struct {
 	Valid bool `json:"-"`
 }
 
+func (v *Location) GetID() uint32 {
+	return v.ID
+}
+
 func (v *Location) Validate() error {
 	switch {
 	case v.ID == 0:
@@ -116,6 +124,10 @@ type Visit struct {
 	Mark uint8 `json:"mark"`
 
 	Valid bool `json:"-"`
+}
+
+func (v *Visit) GetID() uint32 {
+	return v.ID
 }
 
 func (v *Visit) Validate() error {
