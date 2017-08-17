@@ -1,4 +1,4 @@
-package loader
+package main
 
 import (
 	"archive/zip"
@@ -35,10 +35,10 @@ func LoadData(baseURL, fileName string, nWorkers int) {
 		fileName: fileName,
 		nWorkers: nWorkers,
 	}
-	l.loadData()
+	l.LoadData()
 }
 
-func (l *loader) loadData() {
+func (l *loader) LoadData() {
 
 	tasks := make(chan task)
 	defer close(tasks)
