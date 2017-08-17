@@ -5,7 +5,6 @@ import "errors"
 //go:generate ffjson -strict $GOFILE
 
 // User is user profile
-//go:generate cmap-gen -package models -type User -key uint32
 type User struct {
 
 	// адрес электронной почты пользователя. Тип - unicode-строка
@@ -60,7 +59,6 @@ func (v User) IsValid() bool {
 }
 
 // Location is Достопримечательность
-//go:generate cmap-gen -package models -type Location -key uint32
 type Location struct {
 
 	// уникальный внешний id достопримечательности. Устанавливается тестирующей
@@ -104,7 +102,6 @@ func (v Location) IsValid() bool {
 }
 
 // Visit is Посещение
-//go:generate cmap-gen -package models -type Visit -key uint32
 type Visit struct {
 
 	// дата посещения, timestamp с ограничениями: снизу 01.01.2000, а сверху 01.01.2015.
