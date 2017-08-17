@@ -17,6 +17,7 @@ import (
 type Application struct {
 	db            *db.DB
 	countRequests int32
+	heat          func(string, uint32)
 }
 
 // NewApplication creates new Application

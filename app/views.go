@@ -199,7 +199,9 @@ func (app *Application) PostEntityNew(entity string, body []byte) int {
 		return http.StatusBadRequest
 	}
 
-	app.heat(entity, v.GetID())
+	if app.heat != nil {
+		app.heat(entity, v.GetID())
+	}
 
 	return http.StatusOK
 }
@@ -271,7 +273,9 @@ func (app *Application) PostEntity(entity string, id uint32, body []byte) int {
 		app.db.UpdateVisit(visit)
 	}
 
-	app.heat(entity, id)
+	if app.heat != nil {
+		app.heat(entity, id)
+	}
 
 	return http.StatusOK
 }

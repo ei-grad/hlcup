@@ -27,6 +27,7 @@ func main() {
 		dataFileName = flag.String("data", "/tmp/data/data.zip", "data file name")
 		cpuprofile   = flag.String("cpuprofile", "", "write cpu profile `file`")
 		memprofile   = flag.String("memprofile", "", "write memory profile to `file`")
+		useHeat      = flag.Bool("heat", false, "heat GET requests on POST")
 	)
 
 	flag.Parse()
@@ -39,6 +40,7 @@ func main() {
 	}
 
 	app := app.NewApplication()
+	app.UseHeat(*useHeat)
 
 	h := app.RequestHandler
 
