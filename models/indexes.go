@@ -56,14 +56,13 @@ func (lm *LocationMarks) Pop(visitID uint32) (LocationMark, bool) {
 //    country - название страны, в которой находятся интересующие достопримечательности
 //    toDistance - возвращать только те места, у которых расстояние от города меньше этого параметра
 type UserVisit struct {
-	Mark      uint8  `json:"mark"`
 	VisitedAt int    `json:"visited_at"`
 	Place     string `json:"place"`
-
-	Visit    uint32 `json:"-"`
-	Location uint32 `json:"-"`
-	Country  string `json:"-"`
-	Distance uint32 `json:"-"`
+	Country   string `json:"-"`
+	Visit     uint32 `json:"-"`
+	Location  uint32 `json:"-"`
+	Distance  uint32 `json:"-"`
+	Mark      uint8  `json:"mark"`
 }
 
 // UserVisits is user visits index
