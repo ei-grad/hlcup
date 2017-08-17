@@ -7,53 +7,53 @@ import (
 	"github.com/ei-grad/hlcup/models"
 )
 
-type Users []models.User
+type Users [1000000]models.User
 
-func (s Users) Get(id uint32) models.User {
+func (s *Users) Get(id uint32) models.User {
 	return s[id]
 }
 
-func (s Users) Set(id uint32, v models.User) {
+func (s *Users) Set(id uint32, v models.User) {
 	s[id] = v
 }
 
-type Locations []models.Location
+type Locations [1000000]models.Location
 
-func (s Locations) Get(id uint32) models.Location {
+func (s *Locations) Get(id uint32) models.Location {
 	return s[id]
 }
 
-func (s Locations) Set(id uint32, v models.Location) {
+func (s *Locations) Set(id uint32, v models.Location) {
 	s[id] = v
 }
 
-type Visits []models.Visit
+type Visits [10000000]models.Visit
 
-func (s Visits) Get(id uint32) models.Visit {
+func (s *Visits) Get(id uint32) models.Visit {
 	return s[id]
 }
 
-func (s Visits) Set(id uint32, v models.Visit) {
+func (s *Visits) Set(id uint32, v models.Visit) {
 	s[id] = v
 }
 
-type LocationMarks []*models.LocationMarks
+type LocationMarks [1000000]*models.LocationMarks
 
-func (s LocationMarks) Get(id uint32) *models.LocationMarks {
+func (s *LocationMarks) Get(id uint32) *models.LocationMarks {
 	return s[id]
 }
 
-func (s LocationMarks) Set(id uint32, v *models.LocationMarks) {
+func (s *LocationMarks) Set(id uint32, v *models.LocationMarks) {
 	s[id] = v
 }
 
-type UserVisits []*models.UserVisits
+type UserVisits [1000000]*models.UserVisits
 
-func (s UserVisits) Get(id uint32) *models.UserVisits {
+func (s *UserVisits) Get(id uint32) *models.UserVisits {
 	return s[id]
 }
 
-func (s UserVisits) Set(id uint32, v *models.UserVisits) {
+func (s *UserVisits) Set(id uint32, v *models.UserVisits) {
 	s[id] = v
 }
 
@@ -72,19 +72,7 @@ type DB struct {
 	mu sync.RWMutex
 }
 
-var (
-	maxUsers     = 500000
-	maxLocations = 500000
-	maxVisits    = 5000000
-)
-
 // New creates new DB
 func New() *DB {
-	return &DB{
-		users:         make([]models.User, maxUsers),
-		locations:     make([]models.Location, maxLocations),
-		visits:        make([]models.Visit, maxVisits),
-		locationMarks: make([]*models.LocationMarks, maxLocations),
-		userVisits:    make([]*models.UserVisits, maxUsers),
-	}
+	return &DB{}
 }
