@@ -1,3 +1,5 @@
+// +build db_use_array
+
 package db
 
 import (
@@ -7,54 +9,89 @@ import (
 	"github.com/ei-grad/hlcup/models"
 )
 
-type Users [1000000]models.User
+type Users struct {
+	mu   sync.RWMutex
+	data [1000000]models.User
+}
 
 func (s *Users) Get(id uint32) models.User {
-	return s[id]
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.data[id]
 }
 
 func (s *Users) Set(id uint32, v models.User) {
-	s[id] = v
+	s.mu.Lock()
+	s.data[id] = v
+	s.mu.Unlock()
 }
 
-type Locations [1000000]models.Location
+type Locations struct {
+	mu   sync.RWMutex
+	data [1000000]models.Location
+}
 
 func (s *Locations) Get(id uint32) models.Location {
-	return s[id]
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.data[id]
 }
 
 func (s *Locations) Set(id uint32, v models.Location) {
-	s[id] = v
+	s.mu.Lock()
+	s.data[id] = v
+	s.mu.Unlock()
 }
 
-type Visits [10000000]models.Visit
+type Visits struct {
+	mu   sync.RWMutex
+	data [10000000]models.Visit
+}
 
 func (s *Visits) Get(id uint32) models.Visit {
-	return s[id]
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.data[id]
 }
 
 func (s *Visits) Set(id uint32, v models.Visit) {
-	s[id] = v
+	s.mu.Lock()
+	s.data[id] = v
+	s.mu.Unlock()
 }
 
-type LocationMarks [1000000]*models.LocationMarks
+type LocationMarks struct {
+	mu   sync.RWMutex
+	data [1000000]*models.LocationMarks
+}
 
 func (s *LocationMarks) Get(id uint32) *models.LocationMarks {
-	return s[id]
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.data[id]
 }
 
 func (s *LocationMarks) Set(id uint32, v *models.LocationMarks) {
-	s[id] = v
+	s.mu.Lock()
+	s.data[id] = v
+	s.mu.Unlock()
 }
 
-type UserVisits [1000000]*models.UserVisits
+type UserVisits struct {
+	mu   sync.RWMutex
+	data [1000000]*models.UserVisits
+}
 
 func (s *UserVisits) Get(id uint32) *models.UserVisits {
-	return s[id]
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.data[id]
 }
 
 func (s *UserVisits) Set(id uint32, v *models.UserVisits) {
-	s[id] = v
+	s.mu.Lock()
+	s.data[id] = v
+	s.mu.Unlock()
 }
 
 // DB is inmemory database optimized for its task
@@ -62,10 +99,6 @@ type DB struct {
 	users     Users
 	locations Locations
 	visits    Visits
-
-	usersMu     sync.RWMutex
-	locationsMu sync.RWMutex
-	visitsMu    sync.RWMutex
 
 	locationMarks LocationMarks
 	userVisits    UserVisits

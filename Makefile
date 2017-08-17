@@ -13,6 +13,9 @@ fixlinter: generated
 	go clean github.com/ei-grad/hlcup/...
 	go get github.com/ei-grad/hlcup/...
 
+DB = cmap
+
+ifeq ($(DB), cmap)
 GENERATED = \
 	models/entities_ffjson.go \
 	models/indexes_ffjson.go \
@@ -21,6 +24,12 @@ GENERATED = \
 	models/user_cmap.go \
 	models/uservisits_cmap.go \
 	models/visit_cmap.go
+else
+TAGS = -tags db_use_array
+GENERATED = \
+	models/entities_ffjson.go \
+	models/indexes_ffjson.go
+endif
 
 $(GENERATED): models/entities.go models/indexes.go
 	rm -f $(GENERATED)
@@ -31,11 +40,11 @@ generated: $(GENERATED)
 
 DATE = $(shell LANG=C date --iso=seconds)
 APP_VERSION = $(shell git describe --tags)
-LDFLAGS = '-s -w -X main.appVersion=$(APP_VERSION) -X main.appBuildDate=$(DATE)'
+LDFLAGS = '-s -w -X main.appVersion=$(APP_VERSION)/DB=$(DB) -X main.appBuildDate=$(DATE)'
 SOURCES = $(wildcard *.go */*.go)
 
 hlcup: $(SOURCES) $(GENERATED)
-	CGO_ENABLED=0 go build -ldflags=$(LDFLAGS)
+	CGO_ENABLED=0 go build $(TAGS) -ldflags=$(LDFLAGS)
 
 DATADIR = train
 

@@ -25,7 +25,6 @@ type LocationMark struct {
 }
 
 // LocationMarks is used to calculate average location mark
-//go:generate cmap-gen -package models -type *LocationMarks -key uint32
 //ffjson:skip
 type LocationMarks struct {
 	M     sync.RWMutex
@@ -66,7 +65,6 @@ type UserVisit struct {
 }
 
 // UserVisits is user visits index
-//go:generate cmap-gen -package models -type *UserVisits -key uint32
 //ffjson:skip
 type UserVisits struct {
 	M      sync.RWMutex

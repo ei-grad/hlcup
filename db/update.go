@@ -33,9 +33,7 @@ func (db *DB) UpdateUser(v models.User) {
 		}
 	}
 
-	db.usersMu.Lock()
 	db.users.Set(v.ID, v)
-	defer db.usersMu.Unlock()
 }
 
 func (db *DB) UpdateLocation(v models.Location) {
@@ -64,9 +62,7 @@ func (db *DB) UpdateLocation(v models.Location) {
 		}
 	}
 
-	db.locationsMu.Lock()
 	db.locations.Set(v.ID, v)
-	db.locationsMu.Unlock()
 }
 
 func (db *DB) UpdateVisit(v models.Visit) {
@@ -131,7 +127,5 @@ func (db *DB) UpdateVisit(v models.Visit) {
 	sort.Sort(models.UserVisitByVisitedAt(uv.Visits))
 	uv.M.Unlock()
 
-	db.visitsMu.Lock()
 	db.visits.Set(v.ID, v)
-	db.visitsMu.Unlock()
 }

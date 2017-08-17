@@ -9,16 +9,11 @@ import (
 
 // GetVisit get visit by id
 func (db *DB) GetVisit(id uint32) models.Visit {
-	db.visitsMu.RLock()
-	defer db.visitsMu.RUnlock()
 	return db.visits.Get(id)
 }
 
 // AddVisit adds Visit to index
 func (db *DB) AddVisit(v models.Visit) error {
-
-	db.visitsMu.Lock()
-	defer db.visitsMu.Unlock()
 
 	if db.visits.Get(v.ID).IsValid() {
 		return fmt.Errorf("visit with id %d already exists", v.ID)
