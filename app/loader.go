@@ -3,6 +3,7 @@ package app
 import (
 	"archive/zip"
 	"encoding/json"
+	"fmt"
 	"log"
 	"sync"
 	"sync/atomic"
@@ -116,6 +117,9 @@ func (app *Application) loadFile(wg *sync.WaitGroup, f *zip.File, c *counts, sta
 				if err != nil {
 					log.Fatalf("loader: can't add user %d: %s", v.ID, err)
 				}
+				var data []byte
+				data, err = v.MarshalJSON()
+				app.cache.Set([]byte(fmt.Sprintf("/users/%d", v.ID)), data, 0)
 				atomic.AddInt32(&c.Users, 1)
 			}
 		case key == strLocations:
@@ -132,6 +136,9 @@ func (app *Application) loadFile(wg *sync.WaitGroup, f *zip.File, c *counts, sta
 				if err != nil {
 					log.Fatalf("loader: can't add location %d: %s", v.ID, err)
 				}
+				var data []byte
+				data, err = v.MarshalJSON()
+				app.cache.Set([]byte(fmt.Sprintf("/locations/%d", v.ID)), data, 0)
 				atomic.AddInt32(&c.Locations, 1)
 			}
 		case key == strVisits:
@@ -148,6 +155,9 @@ func (app *Application) loadFile(wg *sync.WaitGroup, f *zip.File, c *counts, sta
 				if err != nil {
 					log.Fatalf("loader: can't add visit %d: %s", v.ID, err)
 				}
+				var data []byte
+				data, err = v.MarshalJSON()
+				app.cache.Set([]byte(fmt.Sprintf("/visits/%d", v.ID)), data, 0)
 				atomic.AddInt32(&c.Visits, 1)
 			}
 		default:

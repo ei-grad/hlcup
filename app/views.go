@@ -196,6 +196,8 @@ func (app *Application) PostEntityNew(entity entities.Entity, body []byte) int {
 		return http.StatusBadRequest
 	}
 
+	app.cache.Set([]byte(fmt.Sprintf("/%s/%d", entities.GetEntityRoute(entity), v.GetID())), body, 0)
+
 	if app.heat != nil {
 		app.heat(entity, v.GetID())
 	}
@@ -209,6 +211,7 @@ func (app *Application) PostEntity(entity entities.Entity, id uint32, body []byt
 		v interface {
 			Validate() error
 			IsValid() bool
+			GetID() uint32
 		}
 		user     models.User
 		location models.Location
@@ -269,6 +272,8 @@ func (app *Application) PostEntity(entity entities.Entity, id uint32, body []byt
 	if err != nil {
 		return http.StatusBadRequest
 	}
+
+	app.cache.Del([]byte(fmt.Sprintf("/%s/%d", entities.GetEntityRoute(entity), v.GetID())))
 
 	if app.heat != nil {
 		app.heat(entity, id)

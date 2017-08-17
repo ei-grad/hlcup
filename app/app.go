@@ -28,7 +28,7 @@ type Application struct {
 func NewApplication() *Application {
 	var app Application
 	app.db = db.New()
-	app.cache = freecache.NewCache(512*2 ^ 20)
+	app.cache = freecache.NewCache(512 * 1024 * 1024)
 	return &app
 }
 
@@ -45,7 +45,9 @@ func (app *Application) RpsWatcher() {
 		time.Sleep(1 * time.Second)
 		count := atomic.LoadInt32(&app.countRequests)
 		if count > 0 {
-			log.Printf("RPS: %d", count)
+			log.Printf("RPS: %6d | CACHE HIT RATE: %6d / %6d | CACHED ENTRIES %d", count,
+				app.cache.HitCount(), app.cache.LookupCount(), app.cache.EntryCount())
+			app.cache.ResetStatistics()
 			atomic.SwapInt32(&app.countRequests, 0)
 		}
 	}
@@ -83,11 +85,6 @@ func (app *Application) RequestHandler(ctx *fasthttp.RequestCtx) {
 	switch string(ctx.Method()) {
 
 	case "GET":
-		if v, err := app.cache.Get(path); err == nil {
-			// response from cache
-			ctx.Write(v)
-			return
-		}
 		var entityEnd = 1
 		for ; entityEnd < len(path); entityEnd++ {
 			if path[entityEnd] == '/' {
@@ -108,7 +105,15 @@ func (app *Application) RequestHandler(ctx *fasthttp.RequestCtx) {
 				switch {
 				case err == nil:
 					// /<entity>/<id:int>
+					if v, err := app.cache.Get(path); err == nil {
+						// response from cache
+						ctx.Write(v)
+						return
+					}
 					status = app.GetEntity(ctx, entities.GetEntityByRoute(entity), id)
+					if status == http.StatusOK {
+						app.cache.Set(path, ctx.Response.Body(), 0)
+					}
 				case bytes.Equal(idBytes, []byte("new")):
 					// /<entity>/new is POST-only, say 405 for convenience
 					status = http.StatusMethodNotAllowed
