@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math"
 	"net/http"
 	"sort"
 
@@ -130,7 +129,7 @@ func (app *Application) GetLocationAvg(w io.Writer, id uint32, args Peeker) int 
 		avg = float32(sum) / float32(count)
 	}
 
-	io.WriteString(w, fmt.Sprintf(`{"avg": %.5f}`, math.Nextafter32(avg, avg+1.)))
+	io.WriteString(w, fmt.Sprintf(`{"avg": %.5f}`, avg))
 
 	return http.StatusOK
 }
@@ -190,9 +189,6 @@ func (app *Application) PostEntityNew(entity string, body []byte) int {
 	}
 
 	if err := v.UnmarshalJSON(body); err != nil {
-		return http.StatusBadRequest
-	}
-	if err := v.Validate(); err != nil {
 		return http.StatusBadRequest
 	}
 	if err := saver(); err != nil {
@@ -256,21 +252,21 @@ func (app *Application) PostEntity(entity string, id uint32, body []byte) int {
 		}
 	}
 
-	if err == nil {
-		err = v.Validate()
-	}
-
 	if err != nil {
 		return http.StatusBadRequest
 	}
 
 	switch entity {
 	case strUsers:
-		app.db.UpdateUser(user)
+		err = app.db.UpdateUser(user)
 	case strLocations:
-		app.db.UpdateLocation(location)
+		err = app.db.UpdateLocation(location)
 	case strVisits:
-		app.db.UpdateVisit(visit)
+		err = app.db.UpdateVisit(visit)
+	}
+
+	if err != nil {
+		return http.StatusBadRequest
 	}
 
 	if app.heat != nil {

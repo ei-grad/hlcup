@@ -1,14 +1,20 @@
 package db
 
 import (
-	"fmt"
+	"log"
 	"sort"
 	"time"
 
 	"github.com/ei-grad/hlcup/models"
 )
 
-func (db *DB) UpdateUser(v models.User) {
+func (db *DB) UpdateUser(v models.User) error {
+
+	var err error
+	err = v.Validate()
+	if err != nil {
+		return err
+	}
 
 	old := db.GetUser(v.ID)
 
@@ -34,9 +40,17 @@ func (db *DB) UpdateUser(v models.User) {
 	}
 
 	db.users.Set(v.ID, v)
+
+	return nil
 }
 
-func (db *DB) UpdateLocation(v models.Location) {
+func (db *DB) UpdateLocation(v models.Location) error {
+
+	var err error
+	err = v.Validate()
+	if err != nil {
+		return err
+	}
 
 	old := db.GetLocation(v.ID)
 
@@ -63,9 +77,17 @@ func (db *DB) UpdateLocation(v models.Location) {
 	}
 
 	db.locations.Set(v.ID, v)
+
+	return nil
 }
 
-func (db *DB) UpdateVisit(v models.Visit) {
+func (db *DB) UpdateVisit(v models.Visit) error {
+
+	var err error
+	err = v.Validate()
+	if err != nil {
+		return err
+	}
 
 	old := db.GetVisit(v.ID)
 
@@ -73,8 +95,8 @@ func (db *DB) UpdateVisit(v models.Visit) {
 	if old.User != v.User {
 		visit, found := db.GetUserVisits(old.User).Pop(v.ID)
 		if !found {
-			panic(fmt.Errorf("UserVisit of user %d for visit %d has been lost",
-				old.User, v.ID))
+			log.Fatalf("UserVisit of user %d for visit %d has been lost",
+				old.User, v.ID)
 		}
 		db.GetUserVisits(v.User).Add(visit)
 	}
@@ -83,8 +105,8 @@ func (db *DB) UpdateVisit(v models.Visit) {
 	if old.Location != v.Location {
 		mark, found := db.GetLocationMarks(old.Location).Pop(v.ID)
 		if !found {
-			panic(fmt.Errorf("LocationMark of location %d for visit %d has been lost",
-				old.Location, v.ID))
+			log.Fatalf("LocationMark of location %d for visit %d has been lost",
+				old.Location, v.ID)
 		}
 		db.GetLocationMarks(v.Location).Add(mark)
 	}
@@ -128,4 +150,6 @@ func (db *DB) UpdateVisit(v models.Visit) {
 	uv.M.Unlock()
 
 	db.visits.Set(v.ID, v)
+
+	return nil
 }

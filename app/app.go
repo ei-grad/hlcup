@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"log"
 	"net/http"
+	"runtime/pprof"
 	"strconv"
 	"sync/atomic"
 	"time"
@@ -24,7 +25,6 @@ type Application struct {
 func NewApplication() *Application {
 	var app Application
 	app.db = db.New()
-	go app.rpsWatcher()
 	return &app
 }
 
@@ -36,7 +36,7 @@ func parseUint32(s []byte) (uint32, error) {
 	return uint32(parsed), nil
 }
 
-func (app *Application) rpsWatcher() {
+func (app *Application) RpsWatcher() {
 	for {
 		time.Sleep(1 * time.Second)
 		count := atomic.LoadInt32(&app.countRequests)
@@ -91,6 +91,19 @@ func (app *Application) RequestHandler(ctx *fasthttp.RequestCtx) {
 				default:
 					status = http.StatusNotFound
 				}
+			}
+		case 2:
+			switch string(parts[1]) {
+			case "pprof":
+				if err := pprof.StartCPUProfile(ctx); err != nil {
+					log.Print("could not start CPU profile: ", err)
+					ctx.SetStatusCode(http.StatusInternalServerError)
+					return
+				}
+				time.Sleep(60 * time.Second)
+				pprof.StopCPUProfile()
+				status = 200
+				return
 			}
 		default:
 			status = http.StatusNotFound

@@ -13,7 +13,7 @@ fixlinter: generated
 	go clean github.com/ei-grad/hlcup/...
 	go get github.com/ei-grad/hlcup/...
 
-DB = cmap
+DB = array
 
 ifeq ($(DB), cmap)
 GENERATED = \
@@ -41,15 +41,19 @@ generated: $(GENERATED)
 DATE = $(shell LANG=C date --iso=seconds)
 APP_VERSION = $(shell git describe --tags)
 LDFLAGS = '-s -w -X main.appVersion=$(APP_VERSION)/DB=$(DB) -X main.appBuildDate=$(DATE)'
+#LDFLAGS = '-X main.appVersion=$(APP_VERSION)/DB=$(DB) -X main.appBuildDate=$(DATE)'
 SOURCES = $(wildcard *.go */*.go)
 
 hlcup: $(SOURCES) $(GENERATED)
 	CGO_ENABLED=0 go build $(TAGS) -ldflags=$(LDFLAGS)
 
-DATADIR = train
+DATA = full
+
+race: $(SOURCES) $(GENERATED)
+	go run $(TAGS) -ldflags=$(LDFLAGS) $(wildcard *.go) -b :8000 -data $(DATA)/data.zip $(ARGS)
 
 run: docker
-	docker run -it --rm --net=host -v `realpath $(DATADIR)`:/tmp/data $(IMAGE) ./hlcup $(ARGS)
+	docker run -it --rm --net=host -v `realpath $(DATA)`:/tmp/data $(IMAGE) ./hlcup $(ARGS)
 
 publish: docker
 	docker push $(IMAGE)
@@ -58,5 +62,5 @@ clean:
 	go clean ./... github.com/ei-grad/hlcup/...
 	rm -rf hlcup models/ffjson-inception* models/*_ffjson_expose.go $(GENERATED)
 
-watch: $(GENERATED)
-	iwatch "go build -race -o debug && ./debug -b :8000 -url http://127.0.0.1:8000 -data data/data.zip -v"
+watch: $(SOURCES) $(GENERATED)
+	iwatch "go build $(TAGS) -ldflags=$(LDFLAGS) -o hlcup-watch && ./hlcup-watch -b :8000 -data $(DATA)/data.zip $(ARGS)"

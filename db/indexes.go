@@ -1,7 +1,7 @@
 package db
 
 import (
-	"strconv"
+	"fmt"
 
 	"github.com/ei-grad/hlcup/models"
 )
@@ -9,7 +9,7 @@ import (
 func (db *DB) GetLocationMarks(id uint32) *models.LocationMarks {
 	lm := db.locationMarks.Get(id)
 	if lm == nil {
-		t, _ := db.locationSF.Do(strconv.Itoa(int(id)), func() (interface{}, error) {
+		t, _ := db.sf.Do(fmt.Sprintf("locationMarks/%d", id), func() (interface{}, error) {
 			// check for race condition between first Get and singleflight run
 			ret := db.locationMarks.Get(id)
 			if ret != nil {
@@ -30,7 +30,7 @@ func (db *DB) GetLocationMarks(id uint32) *models.LocationMarks {
 func (db *DB) GetUserVisits(id uint32) *models.UserVisits {
 	uv := db.userVisits.Get(id)
 	if uv == nil {
-		t, _ := db.userSF.Do(strconv.Itoa(int(id)), func() (interface{}, error) {
+		t, _ := db.sf.Do(fmt.Sprintf("userVisits/%d", id), func() (interface{}, error) {
 			// check for race condition between first Get and singleflight run
 			ret := db.userVisits.Get(id)
 			if ret != nil {

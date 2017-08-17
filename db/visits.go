@@ -7,18 +7,26 @@ import (
 	"github.com/ei-grad/hlcup/models"
 )
 
-// GetVisit get visit by id
 func (db *DB) GetVisit(id uint32) models.Visit {
 	return db.visits.Get(id)
 }
 
-// AddVisit adds Visit to index
 func (db *DB) AddVisit(v models.Visit) error {
-
-	if db.visits.Get(v.ID).IsValid() {
-		return fmt.Errorf("visit with id %d already exists", v.ID)
+	var err error
+	err = v.Validate()
+	if err != nil {
+		return err
 	}
-	db.visits.Set(v.ID, v)
+	_, err = db.sf.Do(fmt.Sprintf("visit/%d", v.ID), func() (interface{}, error) {
+		if db.visits.Get(v.ID).IsValid() {
+			return nil, fmt.Errorf("visit %d already exist", v.ID)
+		}
+		db.visits.Set(v.ID, v)
+		return nil, nil
+	})
+	if err != nil {
+		return err
+	}
 
 	location := db.GetLocation(v.Location)
 	if !location.Valid {

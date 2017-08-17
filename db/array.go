@@ -3,7 +3,7 @@
 package db
 
 import (
-	sf "github.com/golang/groupcache/singleflight"
+	"github.com/golang/groupcache/singleflight"
 	"sync"
 
 	"github.com/ei-grad/hlcup/models"
@@ -103,8 +103,7 @@ type DB struct {
 	locationMarks LocationMarks
 	userVisits    UserVisits
 
-	locationSF sf.Group
-	userSF     sf.Group
+	sf singleflight.Group
 }
 
 // New creates new DB
