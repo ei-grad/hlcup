@@ -10,7 +10,7 @@ import (
 
 func (db *DB) UpdateUser(v models.User) {
 
-	old := db.users.Get(v.ID)
+	old := db.GetUser(v.ID)
 
 	if old.BirthDate != v.BirthDate || old.Gender != v.Gender {
 		userLocations := map[uint32]struct{}{}
@@ -33,12 +33,14 @@ func (db *DB) UpdateUser(v models.User) {
 		}
 	}
 
+	db.usersMu.Lock()
 	db.users.Set(v.ID, v)
+	defer db.usersMu.Unlock()
 }
 
 func (db *DB) UpdateLocation(v models.Location) {
 
-	old := db.locations.Get(v.ID)
+	old := db.GetLocation(v.ID)
 
 	if old.Place != v.Place || old.Country != v.Country || old.Distance != v.Distance {
 		locationUsers := map[uint32]struct{}{}
@@ -62,12 +64,14 @@ func (db *DB) UpdateLocation(v models.Location) {
 		}
 	}
 
+	db.locationsMu.Lock()
 	db.locations.Set(v.ID, v)
+	db.locationsMu.Unlock()
 }
 
 func (db *DB) UpdateVisit(v models.Visit) {
 
-	old := db.visits.Get(v.ID)
+	old := db.GetVisit(v.ID)
 
 	// move visit to new user
 	if old.User != v.User {
@@ -127,5 +131,7 @@ func (db *DB) UpdateVisit(v models.Visit) {
 	sort.Sort(models.UserVisitByVisitedAt(uv.Visits))
 	uv.M.Unlock()
 
+	db.visitsMu.Lock()
 	db.visits.Set(v.ID, v)
+	db.visitsMu.Unlock()
 }

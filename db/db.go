@@ -63,13 +63,15 @@ type DB struct {
 	locations Locations
 	visits    Visits
 
+	usersMu     sync.RWMutex
+	locationsMu sync.RWMutex
+	visitsMu    sync.RWMutex
+
 	locationMarks LocationMarks
 	userVisits    UserVisits
 
 	locationSF sf.Group
 	userSF     sf.Group
-
-	mu sync.RWMutex
 }
 
 // New creates new DB
