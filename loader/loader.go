@@ -24,9 +24,9 @@ type loader struct {
 	baseURL, fileName string
 	wg                sync.WaitGroup
 	nWorkers          int
-	countUsers        int64
-	countLocations    int64
-	countVisits       int64
+	countUsers        int32
+	countLocations    int32
+	countVisits       int32
 }
 
 func LoadData(baseURL, fileName string, nWorkers int) {
@@ -136,17 +136,17 @@ func (l *loader) loadFile(f *zip.File, stage int, tasks chan task) {
 		switch {
 		case key == "users" && stage == 1:
 			constructor = func() Entity {
-				atomic.AddInt64(&l.countUsers, 1)
+				atomic.AddInt32(&l.countUsers, 1)
 				return &models.User{}
 			}
 		case key == "locations" && stage == 1:
 			constructor = func() Entity {
-				atomic.AddInt64(&l.countLocations, 1)
+				atomic.AddInt32(&l.countLocations, 1)
 				return &models.Location{}
 			}
 		case key == "visits" && stage == 2:
 			constructor = func() Entity {
-				atomic.AddInt64(&l.countVisits, 1)
+				atomic.AddInt32(&l.countVisits, 1)
 				return &models.Visit{}
 			}
 		default:

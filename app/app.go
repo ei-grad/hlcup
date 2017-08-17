@@ -16,7 +16,7 @@ import (
 // Application implements application logic
 type Application struct {
 	db            *db.DB
-	countRequests int64
+	countRequests int32
 }
 
 // NewApplication creates new Application
@@ -38,10 +38,10 @@ func parseUint32(s []byte) (uint32, error) {
 func (app *Application) rpsWatcher() {
 	for {
 		time.Sleep(1 * time.Second)
-		count := atomic.LoadInt64(&app.countRequests)
+		count := atomic.LoadInt32(&app.countRequests)
 		if count > 0 {
 			log.Printf("RPS: %d", count)
-			atomic.SwapInt64(&app.countRequests, 0)
+			atomic.SwapInt32(&app.countRequests, 0)
 		}
 	}
 }
@@ -50,7 +50,7 @@ func (app *Application) rpsWatcher() {
 // logic
 func (app *Application) RequestHandler(ctx *fasthttp.RequestCtx) {
 
-	atomic.AddInt64(&app.countRequests, 1)
+	atomic.AddInt32(&app.countRequests, 1)
 
 	ctx.SetContentType("application/json; charset=utf8")
 
