@@ -9,22 +9,26 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/coocood/freecache"
 	"github.com/valyala/fasthttp"
 
 	"github.com/ei-grad/hlcup/db"
+	"github.com/ei-grad/hlcup/entities"
 )
 
 // Application implements application logic
 type Application struct {
 	db            *db.DB
+	cache         *freecache.Cache
 	countRequests int32
-	heat          func(string, uint32)
+	heat          func(entities.Entity, uint32)
 }
 
 // NewApplication creates new Application
 func NewApplication() *Application {
 	var app Application
 	app.db = db.New()
+	app.cache = freecache.NewCache(512*2 ^ 20)
 	return &app
 }
 
@@ -47,6 +51,19 @@ func (app *Application) RpsWatcher() {
 	}
 }
 
+func checkPprof(ctx *fasthttp.RequestCtx, entity []byte) int {
+	if bytes.Equal(entity, []byte("pprof")) {
+		if err := pprof.StartCPUProfile(ctx); err != nil {
+			log.Print("could not start CPU profile: ", err)
+			return http.StatusInternalServerError
+		}
+		time.Sleep(60 * time.Second)
+		pprof.StopCPUProfile()
+		return http.StatusOK
+	}
+	return http.StatusNotFound
+}
+
 // RequestHandler contains implementation of all routes and most of application
 // logic
 func (app *Application) RequestHandler(ctx *fasthttp.RequestCtx) {
@@ -55,57 +72,79 @@ func (app *Application) RequestHandler(ctx *fasthttp.RequestCtx) {
 
 	ctx.SetContentType("application/json; charset=utf8")
 
-	parts := bytes.SplitN(ctx.Path(), []byte("/"), 4)
-
 	var (
 		id     uint32
 		status int
 		err    error
 	)
 
+	path := ctx.Path()
+
 	switch string(ctx.Method()) {
 
 	case "GET":
-		switch len(parts) {
-		case 3:
-			if string(parts[2]) == "new" {
-				status = http.StatusMethodNotAllowed
-			} else if id, err = parseUint32(parts[2]); err != nil {
-				status = http.StatusNotFound
-			} else {
-				status = app.GetEntity(ctx, string(parts[1]), id)
+		if v, err := app.cache.Get(path); err == nil {
+			// response from cache
+			ctx.Write(v)
+			return
+		}
+		var entityEnd = 1
+		for ; entityEnd < len(path); entityEnd++ {
+			if path[entityEnd] == '/' {
+				break
 			}
-		case 4:
-			if id, err = parseUint32(parts[2]); err != nil {
-				status = http.StatusNotFound
-			} else {
-				entity := string(parts[1])
-				tail := string(parts[3])
+		}
+		entity := path[1:entityEnd]
+		if entityEnd < len(path) {
+			var idEnd = entityEnd + 1
+			for ; idEnd < len(path); idEnd++ {
+				if path[idEnd] == '/' {
+					break
+				}
+			}
+			idBytes := path[entityEnd+1 : idEnd]
+			if idEnd == len(path) {
+				id, err = parseUint32(idBytes)
 				switch {
-				case entity == "users" && tail == "visits":
-					status = app.GetUserVisits(ctx, id, ctx.QueryArgs())
-				case entity == "locations" && tail == "avg":
-					status = app.GetLocationAvg(ctx, id, ctx.QueryArgs())
-				case entity == "locations" && tail == "marks":
-					status = app.GetLocationMarks(ctx, id)
-				default:
-					status = http.StatusNotFound
+				case err == nil:
+					// /<entity>/<id:int>
+					status = app.GetEntity(ctx, entities.GetEntityByRoute(entity), id)
+				case bytes.Equal(idBytes, []byte("new")):
+					// /<entity>/new is POST-only, say 405 for convenience
+					status = http.StatusMethodNotAllowed
+				}
+			} else {
+				tailEnd := idEnd + 1
+				for ; tailEnd < len(path); tailEnd++ {
+					if path[tailEnd] == '/' {
+						break
+					}
+				}
+				tail := path[idEnd+1 : tailEnd]
+				if tailEnd == len(path) {
+					id, err = parseUint32(idBytes)
+					if err == nil {
+						e := entities.GetEntityByRoute(entity)
+						switch {
+						case e == entities.User && bytes.Equal(tail, bytesVisits):
+							// /user/<id>/visits
+							status = app.GetUserVisits(ctx, id, ctx.QueryArgs())
+						case e == entities.Location && bytes.Equal(tail, bytesAvg):
+							// /locations/<id>/avg
+							status = app.GetLocationAvg(ctx, id, ctx.QueryArgs())
+						case e == entities.Location && bytes.Equal(tail, bytesMarks):
+							// /locations/<id>/marks - utility handler for debug
+							status = app.GetLocationMarks(ctx, id)
+						}
+					}
 				}
 			}
-		case 2:
-			switch string(parts[1]) {
-			case "pprof":
-				if err := pprof.StartCPUProfile(ctx); err != nil {
-					log.Print("could not start CPU profile: ", err)
-					ctx.SetStatusCode(http.StatusInternalServerError)
-					return
-				}
-				time.Sleep(60 * time.Second)
-				pprof.StopCPUProfile()
-				status = 200
-				return
-			}
-		default:
+		} else {
+			// /pprof
+			status = checkPprof(ctx, entity)
+			break
+		}
+		if status == 0 {
 			status = http.StatusNotFound
 		}
 	case "POST":
@@ -117,28 +156,32 @@ func (app *Application) RequestHandler(ctx *fasthttp.RequestCtx) {
 		// Also, check system expects a {} in the response body
 		ctx.Write([]byte("{}"))
 
-		if len(parts) != 3 {
-			status = http.StatusNotFound
-			break
-		}
-
-		body := ctx.PostBody()
-
-		// XXX: some email's could contain the null string... but hopefully - not :-)
-		//if bytes.Contains(body, []byte("null")) {
-		//	ctx.Logger().Printf("found null value: %s", body)
-		//	status = http.StatusBadRequest
-		//	break
-		//}
-
-		if string(parts[2]) == "new" {
-			status = app.PostEntityNew(string(parts[1]), body)
-		} else {
-			if id, err = parseUint32(parts[2]); err != nil {
-				status = http.StatusNotFound
+		var entityEnd = 1
+		for ; entityEnd < len(path); entityEnd++ {
+			if path[entityEnd] == '/' {
 				break
 			}
-			status = app.PostEntity(string(parts[1]), id, body)
+		}
+		entity := path[1:entityEnd]
+		if entityEnd < len(path) {
+			var idEnd = entityEnd + 1
+			for ; idEnd < len(path); idEnd++ {
+				if path[idEnd] == '/' {
+					break
+				}
+			}
+			idBytes := path[entityEnd+1 : idEnd]
+			if idEnd == len(path) {
+				id, err = parseUint32(idBytes)
+				switch {
+				case err == nil:
+					// /<entity>/<id:int>
+					status = app.PostEntity(entities.GetEntityByRoute(entity), id, ctx.PostBody())
+				case bytes.Equal(idBytes, []byte("new")):
+					// /<entity>/new
+					status = app.PostEntityNew(entities.GetEntityByRoute(entity), ctx.PostBody())
+				}
+			}
 		}
 
 	default:

@@ -50,7 +50,7 @@ hlcup: $(SOURCES) $(GENERATED)
 DATA = full
 
 race: $(SOURCES) $(GENERATED)
-	go run $(TAGS) -ldflags=$(LDFLAGS) $(wildcard *.go) -b :8000 -data $(DATA)/data.zip $(ARGS)
+	go run -race $(TAGS) -ldflags=$(LDFLAGS) $(wildcard *.go) -b :8000 -data $(DATA)/data.zip $(ARGS)
 
 run: docker
 	docker run -it --rm --net=host -v `realpath $(DATA)`:/tmp/data $(IMAGE) ./hlcup $(ARGS)

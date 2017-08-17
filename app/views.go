@@ -7,10 +7,11 @@ import (
 	"net/http"
 	"sort"
 
+	"github.com/ei-grad/hlcup/entities"
 	"github.com/ei-grad/hlcup/models"
 )
 
-func (app *Application) GetEntity(w io.Writer, entity string, id uint32) int {
+func (app *Application) GetEntity(w io.Writer, entity entities.Entity, id uint32) int {
 
 	var v interface {
 		IsValid() bool
@@ -18,13 +19,13 @@ func (app *Application) GetEntity(w io.Writer, entity string, id uint32) int {
 	}
 
 	switch entity {
-	case strUsers:
+	case entities.User:
 		user := app.db.GetUser(id)
 		v = &user
-	case strLocations:
+	case entities.Location:
 		location := app.db.GetLocation(id)
 		v = &location
-	case strVisits:
+	case entities.Visit:
 		visit := app.db.GetVisit(id)
 		v = &visit
 	default:
@@ -161,7 +162,7 @@ func (app *Application) GetLocationMarks(w io.Writer, id uint32) int {
 	return http.StatusOK
 }
 
-func (app *Application) PostEntityNew(entity string, body []byte) int {
+func (app *Application) PostEntityNew(entity entities.Entity, body []byte) int {
 
 	var v interface {
 		UnmarshalJSON([]byte) error
@@ -172,19 +173,19 @@ func (app *Application) PostEntityNew(entity string, body []byte) int {
 	var saver func() error
 
 	switch entity {
-	case strUsers:
+	case entities.User:
 		var user models.User
 		v = &user
 		saver = func() error { return app.db.AddUser(user) }
-	case strLocations:
+	case entities.Location:
 		var location models.Location
 		v = &location
 		saver = func() error { return app.db.AddLocation(location) }
-	case strVisits:
+	case entities.Visit:
 		var visit models.Visit
 		v = &visit
 		saver = func() error { return app.db.AddVisit(visit) }
-	default:
+	default: // entities.Unknown
 		return http.StatusNotFound
 	}
 
@@ -202,7 +203,7 @@ func (app *Application) PostEntityNew(entity string, body []byte) int {
 	return http.StatusOK
 }
 
-func (app *Application) PostEntity(entity string, id uint32, body []byte) int {
+func (app *Application) PostEntity(entity entities.Entity, id uint32, body []byte) int {
 
 	var (
 		v interface {
@@ -216,13 +217,13 @@ func (app *Application) PostEntity(entity string, id uint32, body []byte) int {
 	)
 
 	switch entity {
-	case strUsers:
+	case entities.User:
 		user = app.db.GetUser(id)
 		v = &user
-	case strLocations:
+	case entities.Location:
 		location = app.db.GetLocation(id)
 		v = &location
-	case strVisits:
+	case entities.Visit:
 		visit = app.db.GetVisit(id)
 		v = &visit
 	default:
@@ -235,17 +236,17 @@ func (app *Application) PostEntity(entity string, id uint32, body []byte) int {
 	}
 
 	switch entity {
-	case strUsers:
+	case entities.User:
 		err = user.UnmarshalJSON(body)
 		if err == nil && user.ID != id {
 			err = errors.New("id is forbidden in update")
 		}
-	case strLocations:
+	case entities.Location:
 		err = location.UnmarshalJSON(body)
 		if err == nil && location.ID != id {
 			err = errors.New("id is forbidden in update")
 		}
-	case strVisits:
+	case entities.Visit:
 		err = visit.UnmarshalJSON(body)
 		if err == nil && visit.ID != id {
 			err = errors.New("id is forbidden in update")
@@ -257,11 +258,11 @@ func (app *Application) PostEntity(entity string, id uint32, body []byte) int {
 	}
 
 	switch entity {
-	case strUsers:
+	case entities.User:
 		err = app.db.UpdateUser(user)
-	case strLocations:
+	case entities.Location:
 		err = app.db.UpdateLocation(location)
-	case strVisits:
+	case entities.Visit:
 		err = app.db.UpdateVisit(visit)
 	}
 
