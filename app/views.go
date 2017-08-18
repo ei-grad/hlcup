@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"sort"
 
@@ -130,7 +131,7 @@ func (app *Application) GetLocationAvg(w io.Writer, id uint32, args Peeker) int 
 		avg = float64(sum) / float64(count)
 	}
 
-	io.WriteString(w, fmt.Sprintf(`{"avg": %.5f}`, avg))
+	io.WriteString(w, fmt.Sprintf(`{"avg": %.5f}`, math.Nextafter(avg, avg+1.)))
 
 	return http.StatusOK
 }
