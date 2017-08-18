@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"log"
+	"net"
 	"os"
 	"runtime"
 	"syscall"
@@ -25,6 +26,7 @@ func main() {
 		dataFileName  = flag.String("data", "/tmp/data/data.zip", "data file name")
 		useHeat       = flag.Bool("heat", false, "heat GET requests on POST")
 		runRpsWatcher = flag.Bool("rps", true, "log RPS every second")
+		noDelay       = flag.Bool("nodelay", true, "use TCP_NODELAY")
 	)
 
 	flag.Parse()
@@ -53,7 +55,22 @@ func main() {
 	// goroutine to load data and profile cpu and mem
 	go app.LoadData(*dataFileName)
 
-	if err := fasthttp.ListenAndServe(*address, h); err != nil {
+	var err error
+	var ln net.Listener
+
+	if *noDelay {
+		ln, err = NewNoDelayListener(*address)
+		if err != nil {
+			log.Fatalf("Can't setup listener: %s", err)
+		}
+	} else {
+		ln, err = net.Listen("tcp", *address)
+		if err != nil {
+			log.Fatalf("Can't setup listener: %s", err)
+		}
+	}
+
+	if err := fasthttp.Serve(ln, h); err != nil {
 		log.Fatalf("Error in ListenAndServe: %s", err)
 	}
 }
