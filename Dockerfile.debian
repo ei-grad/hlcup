@@ -1,4 +1,4 @@
-FROM golang:rc
+FROM golang:1.8
 CMD /go/bin/hlcup
 EXPOSE 80
 ENV RUN_TOP 1
@@ -11,9 +11,8 @@ RUN curl https://glide.sh/get | sh && \
     cd ffjson && go install
 
 ADD glide.lock glide.yaml ./
-
 RUN glide install
 
 ADD . .
 
-RUN go get
+RUN go generate ./... && go get

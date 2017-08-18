@@ -1,0 +1,24 @@
+hash: fa5cd3be9b2269fa7f28180cf312a715c59a3de890495c1fc4d1975d50395f65
+updated: 2017-08-18T03:38:46.100620044+03:00
+imports:
+- name: github.com/coocood/freecache
+  version: a47e26eb67ac2657e4b5a62b1975bb2b65e0b8b3
+- name: github.com/golang/groupcache
+  version: b710c8433bd175204919eb38776e944233235d03
+  subpackages:
+  - singleflight
+- name: github.com/klauspost/compress
+  version: e80ca55b53e5e6f53deed5c7842e7b7da95e1dc7
+  subpackages:
+  - flate
+  - gzip
+  - zlib
+- name: github.com/klauspost/cpuid
+  version: 09cded8978dc9e80714c4d85b0322337b0a1e5e0
+- name: github.com/spaolacci/murmur3
+  version: 4ec5a0f56d4fc178129a8433576bf6f2fe672a9e
+- name: github.com/valyala/fasthttp
+  version: d42167fd04f636e20b005e9934159e95454233c7
+  subpackages:
+  - fasthttputil
+testImports: []

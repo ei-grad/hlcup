@@ -12,6 +12,7 @@ fixlinter: generated
 DB = array
 
 ifeq ($(DB), cmap)
+TAGS = -tags db_use_cmap
 GENERATED = \
 	models/entities_ffjson.go \
 	models/indexes_ffjson.go \
@@ -21,7 +22,6 @@ GENERATED = \
 	models/uservisits_cmap.go \
 	models/visit_cmap.go
 else
-TAGS = -tags db_use_array
 GENERATED = \
 	models/entities_ffjson.go \
 	models/indexes_ffjson.go

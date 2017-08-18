@@ -6,3 +6,4 @@
 *_cmap.go
 /docker
 /debug
+/vendor

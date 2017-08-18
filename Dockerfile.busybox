@@ -1,0 +1,6 @@
+FROM busybox
+CMD /hlcup
+ENV PATH=/
+EXPOSE 80
+ENV RUN_TOP 1
+ADD hlcup /
