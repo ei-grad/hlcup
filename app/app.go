@@ -80,7 +80,7 @@ func (app *Application) RequestHandler(ctx *fasthttp.RequestCtx) {
 		err    error
 	)
 
-	path := ctx.Path()
+	path := ctx.Request.Header.RequestURI()
 
 	switch string(ctx.Method()) {
 
@@ -121,12 +121,12 @@ func (app *Application) RequestHandler(ctx *fasthttp.RequestCtx) {
 			} else {
 				tailEnd := idEnd + 1
 				for ; tailEnd < len(path); tailEnd++ {
-					if path[tailEnd] == '/' {
+					if path[tailEnd] == '/' || path[tailEnd] == '?' {
 						break
 					}
 				}
 				tail := path[idEnd+1 : tailEnd]
-				if tailEnd == len(path) {
+				if tailEnd == len(path) || path[tailEnd] == '?' {
 					id, err = parseUint32(idBytes)
 					if err == nil {
 						e := entities.GetEntityByRoute(entity)
@@ -171,12 +171,12 @@ func (app *Application) RequestHandler(ctx *fasthttp.RequestCtx) {
 		if entityEnd < len(path) {
 			var idEnd = entityEnd + 1
 			for ; idEnd < len(path); idEnd++ {
-				if path[idEnd] == '/' {
+				if path[idEnd] == '/' || path[idEnd] == '?' {
 					break
 				}
 			}
 			idBytes := path[entityEnd+1 : idEnd]
-			if idEnd == len(path) {
+			if idEnd == len(path) || path[idEnd] == '?' {
 				id, err = parseUint32(idBytes)
 				switch {
 				case err == nil:
