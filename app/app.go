@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"log"
 	"net/http"
+	"runtime"
 	"runtime/pprof"
-	"strconv"
 	"sync/atomic"
 	"time"
 
@@ -32,14 +32,6 @@ func NewApplication() *Application {
 	return &app
 }
 
-func parseUint32(s []byte) (uint32, error) {
-	parsed, err := strconv.ParseUint(string(s), 10, 32)
-	if err != nil {
-		return 0, err
-	}
-	return uint32(parsed), nil
-}
-
 func (app *Application) RpsWatcher() {
 	for {
 		time.Sleep(1 * time.Second)
@@ -53,7 +45,7 @@ func (app *Application) RpsWatcher() {
 	}
 }
 
-func checkPprof(ctx *fasthttp.RequestCtx, entity []byte) int {
+func handlePprof(ctx *fasthttp.RequestCtx, entity []byte) int {
 	if bytes.Equal(entity, []byte("pprof")) {
 		if err := pprof.StartCPUProfile(ctx); err != nil {
 			log.Print("could not start CPU profile: ", err)
@@ -63,11 +55,17 @@ func checkPprof(ctx *fasthttp.RequestCtx, entity []byte) int {
 		pprof.StopCPUProfile()
 		return http.StatusOK
 	}
+	if bytes.Equal(entity, []byte("pprof_mem")) {
+		runtime.GC() // get up-to-date statistics
+		if err := pprof.WriteHeapProfile(ctx); err != nil {
+			log.Fatal("could not write memory profile: ", err)
+		}
+		return http.StatusOK
+	}
 	return http.StatusNotFound
 }
 
-// RequestHandler contains implementation of all routes and most of application
-// logic
+// RequestHandler contains routing implementation
 func (app *Application) RequestHandler(ctx *fasthttp.RequestCtx) {
 
 	atomic.AddInt32(&app.countRequests, 1)
@@ -146,7 +144,7 @@ func (app *Application) RequestHandler(ctx *fasthttp.RequestCtx) {
 			}
 		} else {
 			// /pprof
-			status = checkPprof(ctx, entity)
+			status = handlePprof(ctx, entity)
 			break
 		}
 		if status == 0 {
