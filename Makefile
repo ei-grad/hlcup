@@ -4,13 +4,6 @@ IMAGE = stor.highloadcup.ru/travels/raccoon_shooter
 
 all: fixlinter hlcup
 
-docker: $(SOURCES) $(wildcard Dockerfile*)
-	rm -f Dockerfile
-	ln -s Dockerfile.$(DOCKERFILE) Dockerfile
-	docker build -t $(IMAGE):$(DOCKERFILE) .
-	docker tag $(IMAGE):$(DOCKERFILE) $(IMAGE):latest
-	touch docker
-
 fixlinter: generated
 	# "Running 'go get' to fix linters analysis"
 	go clean github.com/ei-grad/hlcup/...
@@ -49,6 +42,10 @@ SOURCES = $(wildcard *.go */*.go)
 
 hlcup: $(SOURCES) $(GENERATED)
 	CGO_ENABLED=0 go build $(TAGS) -ldflags=$(LDFLAGS)
+
+docker: $(SOURCES) Dockerfile
+	docker build -t $(IMAGE) .
+	touch docker
 
 DATA = full
 
