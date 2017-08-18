@@ -36,7 +36,6 @@ func (cl *Listener) Accept() (net.Conn, error) {
 	if err != nil {
 		return conn, err
 	}
-	conn.SetNoDelay(true)
 	return conn, err
 }
 
