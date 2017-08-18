@@ -26,7 +26,6 @@ func main() {
 		dataFileName  = flag.String("data", "/tmp/data/data.zip", "data file name")
 		useHeat       = flag.Bool("heat", false, "heat GET requests on POST")
 		runRpsWatcher = flag.Bool("rps", true, "log RPS every second")
-		noDelay       = flag.Bool("nodelay", true, "use TCP_NODELAY")
 	)
 
 	flag.Parse()
@@ -58,16 +57,9 @@ func main() {
 	var err error
 	var ln net.Listener
 
-	if *noDelay {
-		ln, err = NewNoDelayListener(*address)
-		if err != nil {
-			log.Fatalf("Can't setup listener: %s", err)
-		}
-	} else {
-		ln, err = net.Listen("tcp", *address)
-		if err != nil {
-			log.Fatalf("Can't setup listener: %s", err)
-		}
+	ln, err = NewListener(*address)
+	if err != nil {
+		log.Fatalf("Can't setup listener: %s", err)
 	}
 
 	if err := fasthttp.Serve(ln, h); err != nil {
