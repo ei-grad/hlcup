@@ -1,4 +1,4 @@
-// +build !db_use_array
+// +build db_use_cmap
 
 package models
 

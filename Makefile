@@ -4,8 +4,11 @@ IMAGE = stor.highloadcup.ru/travels/raccoon_shooter
 
 all: fixlinter hlcup
 
-docker: hlcup Dockerfile
-	docker build -t $(IMAGE) .
+docker: $(SOURCES) $(wildcard Dockerfile*)
+	rm -f Dockerfile
+	ln -s Dockerfile.$(DOCKERFILE) Dockerfile
+	docker build -t $(IMAGE):$(DOCKERFILE) .
+	docker tag $(IMAGE):$(DOCKERFILE) $(IMAGE):latest
 	touch docker
 
 fixlinter: generated
@@ -53,14 +56,14 @@ race: $(SOURCES) $(GENERATED)
 	go run -race $(TAGS) -ldflags=$(LDFLAGS) $(wildcard *.go) -b :8000 -data $(DATA)/data.zip $(ARGS)
 
 run: docker
-	docker run -it --rm --net=host -v `realpath $(DATA)`:/tmp/data $(IMAGE) ./hlcup $(ARGS)
+	docker run -it --rm --net=host -v `realpath $(DATA)`:/tmp/data $(IMAGE) hlcup $(ARGS)
 
 publish: docker
 	docker push $(IMAGE)
 
 clean:
 	go clean ./... github.com/ei-grad/hlcup/...
-	rm -rf hlcup models/ffjson-inception* models/*_ffjson_expose.go $(GENERATED)
+	rm -rf hlcup docker models/ffjson-inception* models/*_ffjson_expose.go $(GENERATED)
 
 watch: $(SOURCES) $(GENERATED)
 	iwatch "go build $(TAGS) -ldflags=$(LDFLAGS) -o hlcup-watch && ./hlcup-watch -b :8000 -data $(DATA)/data.zip $(ARGS)"

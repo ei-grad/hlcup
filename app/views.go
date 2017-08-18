@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math"
 	"net/http"
 	"sort"
 
@@ -111,7 +110,7 @@ func (app *Application) GetLocationAvg(w io.Writer, id uint32, args Peeker) int 
 	}
 
 	var sum, count int
-	var avg float32
+	var avg float64
 
 	marks := app.db.GetLocationMarks(id)
 	marks.M.RLock()
@@ -128,10 +127,10 @@ func (app *Application) GetLocationAvg(w io.Writer, id uint32, args Peeker) int 
 		// location have no marks
 		avg = 0.
 	} else {
-		avg = float32(sum) / float32(count)
+		avg = float64(sum) / float64(count)
 	}
 
-	io.WriteString(w, fmt.Sprintf(`{"avg": %.5f}`, math.Nextafter32(avg, avg+1.)))
+	io.WriteString(w, fmt.Sprintf(`{"avg": %.5f}`, avg))
 
 	return http.StatusOK
 }

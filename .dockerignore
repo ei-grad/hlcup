@@ -1,6 +1,10 @@
 loadtest
-data
+full
+train
+ammogen.py
+models/*_cmap.go
+models/*_ffjson.go
 Dockerfile
 Makefile
-**.go
 docker
+vendor
