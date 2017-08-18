@@ -9,7 +9,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/pquerna/ffjson/ffjson"
 	"github.com/valyala/fasthttp"
 
 	"github.com/ei-grad/hlcup/models"
@@ -183,8 +182,6 @@ func (l *loader) worker(tasks chan task) {
 }
 
 func (l *loader) sendPost(url string, body []byte) {
-
-	defer ffjson.Pool(body)
 
 	req := fasthttp.AcquireRequest()
 	defer fasthttp.ReleaseRequest(req)

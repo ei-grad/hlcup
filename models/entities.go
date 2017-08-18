@@ -2,7 +2,7 @@ package models
 
 import "errors"
 
-//go:generate ffjson -strict $GOFILE
+//go:generate easyjson -all $GOFILE
 
 // User is user profile
 type User struct {

@@ -5,10 +5,7 @@ ENV RUN_TOP 1
 
 WORKDIR /go/src/github.com/ei-grad/hlcup
 
-RUN curl https://glide.sh/get | sh && \
-    mkdir -p /go/src/github.com/pquerna && cd /go/src/github.com/pquerna && \
-    git clone --depth 1 -b hlcup https://github.com/ei-grad/ffjson && \
-    cd ffjson && go install
+RUN curl https://glide.sh/get | sh
 
 ADD glide.lock glide.yaml ./
 

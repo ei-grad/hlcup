@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-//go:generate ffjson $GOFILE
+//go:generate easyjson $GOFILE
 
 // LocationMark contains info needed to implement filters:
 //    fromDate - учитывать оценки только с visited_at > fromDate
@@ -14,7 +14,7 @@ import (
 //    fromAge - учитывать только путешественников, у которых возраст (считается от текущего timestamp) больше этого параметра
 //    toAge - как предыдущее, но наоборот
 //    gender - учитывать оценки только мужчин или женщин
-// ffjson используется для отладочной ручки /location/<id>/marks
+//easyjson:json
 type LocationMark struct {
 	Visit     uint32
 	User      uint32
@@ -25,7 +25,6 @@ type LocationMark struct {
 }
 
 // LocationMarks is used to calculate average location mark
-//ffjson:skip
 type LocationMarks struct {
 	M     sync.RWMutex
 	Marks []LocationMark
@@ -54,6 +53,7 @@ func (lm *LocationMarks) Pop(visitID uint32) (LocationMark, bool) {
 //    toDate - посещения с visited_at < toDate
 //    country - название страны, в которой находятся интересующие достопримечательности
 //    toDistance - возвращать только те места, у которых расстояние от города меньше этого параметра
+//easyjson:json
 type UserVisit struct {
 	VisitedAt int    `json:"visited_at"`
 	Place     string `json:"place"`
@@ -65,7 +65,6 @@ type UserVisit struct {
 }
 
 // UserVisits is user visits index
-//ffjson:skip
 type UserVisits struct {
 	M      sync.RWMutex
 	Visits []UserVisit

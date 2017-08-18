@@ -1,5 +1,5 @@
-hash: fa5cd3be9b2269fa7f28180cf312a715c59a3de890495c1fc4d1975d50395f65
-updated: 2017-08-18T03:38:46.100620044+03:00
+hash: ffc7dd474098c37571b3097df4d1bac7282bd9d9176fc6b3b0c553302c76e829
+updated: 2017-08-19T02:10:13.329219103+03:00
 imports:
 - name: github.com/coocood/freecache
   version: a47e26eb67ac2657e4b5a62b1975bb2b65e0b8b3
@@ -15,10 +15,18 @@ imports:
   - zlib
 - name: github.com/klauspost/cpuid
   version: 09cded8978dc9e80714c4d85b0322337b0a1e5e0
+- name: github.com/mailru/easyjson
+  version: 2f5df55504ebc322e4d52d34df6a1f5b503bf26d
+  subpackages:
+  - buffer
+  - jlexer
+  - jwriter
 - name: github.com/spaolacci/murmur3
   version: 4ec5a0f56d4fc178129a8433576bf6f2fe672a9e
 - name: github.com/valyala/fasthttp
   version: d42167fd04f636e20b005e9934159e95454233c7
   subpackages:
   - fasthttputil
+- name: github.com/valyala/tcplisten
+  version: ceec8f93295a060cdb565ec25e4ccf17941dbd55
 testImports: []
