@@ -3,12 +3,12 @@ package main
 import (
 	"flag"
 	"log"
-	"net"
 	"os"
 	"runtime"
 	"syscall"
 
 	"github.com/valyala/fasthttp"
+	"github.com/valyala/tcplisten"
 
 	"github.com/ei-grad/hlcup/app"
 )
@@ -55,13 +55,15 @@ func main() {
 	go app.LoadData(*dataFileName)
 
 	var err error
-	var ln net.Listener
 
-	ln, err = NewListener(*address)
+	var cfg = &tcplisten.Config{
+		DeferAccept: true,
+		FastOpen:    true,
+	}
+	ln, err := cfg.NewListener("tcp4", *address)
 	if err != nil {
 		log.Fatalf("Can't setup listener: %s", err)
 	}
-
 	if err := fasthttp.Serve(ln, h); err != nil {
 		log.Fatalf("Error in ListenAndServe: %s", err)
 	}
