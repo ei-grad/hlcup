@@ -11,21 +11,9 @@ fixlinter: generated
 
 DB = array
 
-ifeq ($(DB), cmap)
-TAGS = -tags db_use_cmap
-GENERATED = \
-	models/entities_easyjson.go \
-	models/indexes_easyjson.go \
-	models/location_cmap.go \
-	models/locationmarks_cmap.go \
-	models/user_cmap.go \
-	models/uservisits_cmap.go \
-	models/visit_cmap.go
-else
 GENERATED = \
 	models/entities_easyjson.go \
 	models/indexes_easyjson.go
-endif
 
 $(GENERATED): models/entities.go models/indexes.go
 	go generate ./models
@@ -33,9 +21,7 @@ $(GENERATED): models/entities.go models/indexes.go
 generated: $(GENERATED)
 
 DATE = $(shell LANG=C date --iso=seconds)
-APP_VERSION = $(shell git describe --tags)
-LDFLAGS = '-s -w -X main.appVersion=$(APP_VERSION)/DB=$(DB) -X main.appBuildDate=$(DATE)'
-#LDFLAGS = '-X main.appVersion=$(APP_VERSION)/DB=$(DB) -X main.appBuildDate=$(DATE)'
+LDFLAGS = '-s -w -X main.appBuildDate=$(DATE)'
 SOURCES = $(wildcard *.go */*.go)
 
 hlcup: $(SOURCES) $(GENERATED)

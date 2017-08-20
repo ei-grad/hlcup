@@ -1,5 +1,3 @@
-// +build !db_use_cmap
-
 package db
 
 import (
