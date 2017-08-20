@@ -9,6 +9,8 @@ import (
 	"github.com/ei-grad/hlcup/models"
 )
 
+const Version = "array"
+
 type Users struct {
 	mu   sync.RWMutex
 	data [1000000]models.User

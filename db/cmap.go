@@ -8,6 +8,8 @@ import (
 	"github.com/ei-grad/hlcup/models"
 )
 
+const Version = "cmap"
+
 // DB is inmemory database optimized for its task
 type DB struct {
 	users     *models.UserMap

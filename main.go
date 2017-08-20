@@ -11,14 +11,17 @@ import (
 	"github.com/valyala/tcplisten"
 
 	"github.com/ei-grad/hlcup/app"
+	"github.com/ei-grad/hlcup/db"
 )
 
-var appVersion, appBuildDate string
+var Version = "0.0.1"
+var BuildDate string
 
 func main() {
 
 	log.Printf("HighLoad Cup solution by Andrew Grigorev <andrew@ei-grad.ru>")
-	log.Printf("Version %s built %s, %s", appVersion, appBuildDate, runtime.Version())
+	log.Printf("Version %s/DB=%s built %s, %s", Version, db.Version, BuildDate, runtime.Version())
+	log.Printf("GOMAXPROCS: %d", runtime.GOMAXPROCS(0))
 
 	var (
 		accessLog     = flag.Bool("v", false, "show access log")
