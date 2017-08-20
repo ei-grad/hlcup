@@ -7,26 +7,7 @@ import (
 	"github.com/ei-grad/hlcup/models"
 )
 
-func (db *DB) GetVisit(id uint32) models.Visit {
-	return db.visits.Get(id)
-}
-
-func (db *DB) AddVisit(v models.Visit) error {
-	var err error
-	err = v.Validate()
-	if err != nil {
-		return err
-	}
-	_, err = db.sf.Do(fmt.Sprintf("visit/%d", v.ID), func() (interface{}, error) {
-		if db.visits.Get(v.ID).IsValid() {
-			return nil, fmt.Errorf("visit %d already exist", v.ID)
-		}
-		db.visits.Set(v.ID, v)
-		return nil, nil
-	})
-	if err != nil {
-		return err
-	}
+func (db *DB) AddVisitToIndex(v models.Visit) error {
 
 	location := db.GetLocation(v.Location)
 	if !location.Valid {
@@ -49,7 +30,7 @@ func (db *DB) AddVisit(v models.Visit) error {
 	})
 
 	// Add to db.userVisits
-	db.GetUserVisits(v.User).Add(models.UserVisit{
+	uv := models.UserVisit{
 		Visit:     v.ID,
 		Location:  v.Location,
 		Mark:      v.Mark,
@@ -57,7 +38,9 @@ func (db *DB) AddVisit(v models.Visit) error {
 		Place:     location.Place,
 		Country:   location.Country,
 		Distance:  location.Distance,
-	})
+	}
+	uv.JSON, _ = uv.MarshalJSON()
+	db.GetUserVisits(v.User).Add(uv)
 
 	return nil
 

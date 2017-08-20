@@ -8,5 +8,4 @@ var (
 	bytesLocations = []byte(strLocations)
 	bytesVisits    = []byte(strVisits)
 	bytesAvg       = []byte("avg")
-	bytesMarks     = []byte("marks")
 )

@@ -3,112 +3,105 @@
 package db
 
 import (
-	"github.com/golang/groupcache/singleflight"
-	"sync"
+	"errors"
 
 	"github.com/ei-grad/hlcup/models"
 )
 
 const Version = "array"
 
-type Users struct {
-	mu   sync.RWMutex
-	data [1000000]models.User
-}
+const (
+	MaxUsers           = 1000000
+	MaxLocations       = MaxUsers
+	MaxVisits          = MaxUsers * 10
+	DefaultShardsCount = 41 // it is a prime near 42
+)
 
-func (s *Users) Get(id uint32) models.User {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	return s.data[id]
-}
-
-func (s *Users) Set(id uint32, v models.User) {
-	s.mu.Lock()
-	s.data[id] = v
-	s.mu.Unlock()
-}
-
-type Locations struct {
-	mu   sync.RWMutex
-	data [1000000]models.Location
-}
-
-func (s *Locations) Get(id uint32) models.Location {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	return s.data[id]
-}
-
-func (s *Locations) Set(id uint32, v models.Location) {
-	s.mu.Lock()
-	s.data[id] = v
-	s.mu.Unlock()
-}
-
-type Visits struct {
-	mu   sync.RWMutex
-	data [10000000]models.Visit
-}
-
-func (s *Visits) Get(id uint32) models.Visit {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	return s.data[id]
-}
-
-func (s *Visits) Set(id uint32, v models.Visit) {
-	s.mu.Lock()
-	s.data[id] = v
-	s.mu.Unlock()
-}
-
-type LocationMarks struct {
-	mu   sync.RWMutex
-	data [1000000]*models.LocationMarks
-}
-
-func (s *LocationMarks) Get(id uint32) *models.LocationMarks {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	return s.data[id]
-}
-
-func (s *LocationMarks) Set(id uint32, v *models.LocationMarks) {
-	s.mu.Lock()
-	s.data[id] = v
-	s.mu.Unlock()
-}
-
-type UserVisits struct {
-	mu   sync.RWMutex
-	data [1000000]*models.UserVisits
-}
-
-func (s *UserVisits) Get(id uint32) *models.UserVisits {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	return s.data[id]
-}
-
-func (s *UserVisits) Set(id uint32, v *models.UserVisits) {
-	s.mu.Lock()
-	s.data[id] = v
-	s.mu.Unlock()
-}
-
-// DB is inmemory database optimized for its task
 type DB struct {
-	users     Users
-	locations Locations
-	visits    Visits
+	users     [MaxUsers]models.User
+	locations [MaxLocations]models.Location
+	visits    [MaxVisits]models.Visit
 
-	locationMarks LocationMarks
-	userVisits    UserVisits
+	locationMarks [MaxLocations]*models.LocationMarks
+	userVisits    [MaxUsers]*models.UserVisits
 
-	sf singleflight.Group
+	lockU *ShardedLock
+	lockL *ShardedLock
+	lockV *ShardedLock
+
+	lockLM *ShardedLock
+	lockUV *ShardedLock
 }
 
-// New creates new DB
 func New() *DB {
-	return &DB{}
+	return &DB{
+		lockU: NewShardedLock(DefaultShardsCount),
+		lockL: NewShardedLock(DefaultShardsCount),
+		lockV: NewShardedLock(DefaultShardsCount),
+
+		lockLM: NewShardedLock(DefaultShardsCount),
+		lockUV: NewShardedLock(DefaultShardsCount),
+	}
+}
+
+var ErrAlreadyExists = errors.New("already exists")
+
+func (db *DB) GetUser(id uint32) models.User {
+	db.lockU.RLock(id)
+	defer db.lockU.RUnlock(id)
+	return db.users[id]
+}
+
+func (db *DB) GetLocation(id uint32) models.Location {
+	db.lockL.RLock(id)
+	defer db.lockL.RUnlock(id)
+	return db.locations[id]
+}
+
+func (db *DB) GetVisit(id uint32) models.Visit {
+	db.lockV.RLock(id)
+	defer db.lockV.RUnlock(id)
+	return db.visits[id]
+}
+
+func (db *DB) AddUser(v models.User) error {
+	if err := v.Validate(); err != nil {
+		return err
+	}
+	v.JSON, _ = v.MarshalJSON()
+	db.lockU.Lock(v.ID)
+	if db.users[v.ID].Valid {
+		return ErrAlreadyExists
+	}
+	db.users[v.ID] = v
+	db.lockU.Unlock(v.ID)
+	return nil
+}
+
+func (db *DB) AddLocation(v models.Location) error {
+	if err := v.Validate(); err != nil {
+		return err
+	}
+	v.JSON, _ = v.MarshalJSON()
+	db.lockL.Lock(v.ID)
+	if db.locations[v.ID].Valid {
+		return ErrAlreadyExists
+	}
+	db.locations[v.ID] = v
+	db.lockL.Unlock(v.ID)
+	return nil
+}
+
+func (db *DB) AddVisit(v models.Visit) error {
+	if err := v.Validate(); err != nil {
+		return err
+	}
+	v.JSON, _ = v.MarshalJSON()
+	db.lockV.Lock(v.ID)
+	if db.visits[v.ID].Valid {
+		return ErrAlreadyExists
+	}
+	db.visits[v.ID] = v
+	db.lockV.Unlock(v.ID)
+	return db.AddVisitToIndex(v)
 }

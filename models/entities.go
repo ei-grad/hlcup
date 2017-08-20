@@ -29,6 +29,8 @@ type User struct {
 	ID uint32 `json:"id"`
 
 	Valid bool `json:"-"`
+
+	JSON []byte `json:"-"`
 }
 
 func (v *User) GetID() uint32 {
@@ -58,6 +60,10 @@ func (v User) IsValid() bool {
 	return v.Valid
 }
 
+func (v *User) DumpTo(w Writer) {
+	w.Write(v.JSON)
+}
+
 // Location is Достопримечательность
 type Location struct {
 
@@ -78,6 +84,8 @@ type Location struct {
 	City string `json:"city"`
 
 	Valid bool `json:"-"`
+
+	JSON []byte `json:"-"`
 }
 
 func (v *Location) GetID() uint32 {
@@ -101,6 +109,10 @@ func (v Location) IsValid() bool {
 	return v.Valid
 }
 
+func (v *Location) DumpTo(w Writer) {
+	w.Write(v.JSON)
+}
+
 // Visit is Посещение
 type Visit struct {
 
@@ -121,6 +133,8 @@ type Visit struct {
 	Mark uint8 `json:"mark"`
 
 	Valid bool `json:"-"`
+
+	JSON []byte `json:"-"`
 }
 
 func (v *Visit) GetID() uint32 {
@@ -140,4 +154,8 @@ func (v *Visit) Validate() error {
 
 func (v Visit) IsValid() bool {
 	return v.Valid
+}
+
+func (v *Visit) DumpTo(w Writer) {
+	w.Write(v.JSON)
 }

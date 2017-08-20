@@ -14,7 +14,7 @@ import (
 	"github.com/ei-grad/hlcup/db"
 )
 
-var Version = "0.0.1"
+var Version = "0.0.2"
 var BuildDate string
 
 func main() {
@@ -35,6 +35,7 @@ func main() {
 
 	rlimit()
 	memstats()
+	whoami()
 
 	if os.Getenv("RUN_TOP") == "1" {
 		go top()
@@ -52,7 +53,9 @@ func main() {
 		h = accessLogHandler(h)
 	}
 
-	syscall.Mlockall(syscall.MCL_CURRENT | syscall.MCL_FUTURE)
+	if err := syscall.Mlockall(syscall.MCL_CURRENT | syscall.MCL_FUTURE); err != nil {
+		log.Fatal("mlockall:", err)
+	}
 
 	// goroutine to load data and profile cpu and mem
 	go app.LoadData(*dataFileName)
@@ -65,9 +68,9 @@ func main() {
 	}
 	ln, err := cfg.NewListener("tcp4", *address)
 	if err != nil {
-		log.Fatalf("Can't setup listener: %s", err)
+		log.Fatal("can't setup listener:", err)
 	}
 	if err := fasthttp.Serve(ln, h); err != nil {
-		log.Fatalf("Error in ListenAndServe: %s", err)
+		log.Fatal("fasthttp.Serve:", err)
 	}
 }

@@ -14,7 +14,6 @@ import (
 //    fromAge - учитывать только путешественников, у которых возраст (считается от текущего timestamp) больше этого параметра
 //    toAge - как предыдущее, но наоборот
 //    gender - учитывать оценки только мужчин или женщин
-//easyjson:json
 type LocationMark struct {
 	Visit     uint32
 	User      uint32
@@ -62,6 +61,11 @@ type UserVisit struct {
 	Location  uint32 `json:"-"`
 	Distance  uint32 `json:"-"`
 	Mark      uint8  `json:"mark"`
+	JSON      []byte `json:"-"`
+}
+
+func (v UserVisit) DumpTo(w Writer) {
+	w.Write(v.JSON)
 }
 
 // UserVisits is user visits index

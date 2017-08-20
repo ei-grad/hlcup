@@ -16,7 +16,7 @@ func (app *Application) GetEntity(w io.Writer, entity entities.Entity, id uint32
 
 	var v interface {
 		IsValid() bool
-		MarshalJSON() ([]byte, error)
+		DumpTo(models.Writer)
 	}
 
 	switch entity {
@@ -37,13 +37,7 @@ func (app *Application) GetEntity(w io.Writer, entity entities.Entity, id uint32
 		return http.StatusNotFound
 	}
 
-	resp, err := v.MarshalJSON()
-	if err != nil {
-		// v.MarshalJSON() failed, shouldn't happen
-		panic(err)
-	}
-
-	w.Write(resp)
+	v.DumpTo(w)
 
 	return http.StatusOK
 
@@ -88,8 +82,7 @@ func (app *Application) GetUserVisits(w io.Writer, id uint32, args Peeker) int {
 		if !first {
 			io.WriteString(w, ",")
 		}
-		tmp, _ := i.MarshalJSON()
-		w.Write(tmp)
+		i.DumpTo(w)
 		first = false
 	}
 	visits.M.RUnlock()
@@ -136,38 +129,10 @@ func (app *Application) GetLocationAvg(w io.Writer, id uint32, args Peeker) int 
 	return http.StatusOK
 }
 
-func (app *Application) GetLocationMarks(w io.Writer, id uint32) int {
-
-	if !app.db.GetLocation(id).IsValid() {
-		return http.StatusNotFound
-	}
-
-	first := true
-
-	io.WriteString(w, `{"marks":[`)
-
-	marks := app.db.GetLocationMarks(id)
-	marks.M.RLock()
-	for _, i := range marks.Marks {
-		if !first {
-			io.WriteString(w, ",")
-		}
-		tmp, _ := i.MarshalJSON()
-		w.Write(tmp)
-		first = false
-	}
-	marks.M.RUnlock()
-
-	io.WriteString(w, "]}")
-
-	return http.StatusOK
-}
-
 func (app *Application) PostEntityNew(entity entities.Entity, body []byte) int {
 
 	var v interface {
 		UnmarshalJSON([]byte) error
-		Validate() error
 		GetID() uint32
 	}
 
@@ -197,8 +162,6 @@ func (app *Application) PostEntityNew(entity entities.Entity, body []byte) int {
 		return http.StatusBadRequest
 	}
 
-	app.cache.Set([]byte(fmt.Sprintf("/%s/%d", entities.GetEntityRoute(entity), v.GetID())), body, 0)
-
 	if app.heat != nil {
 		app.heat(entity, v.GetID())
 	}
@@ -210,7 +173,6 @@ func (app *Application) PostEntity(entity entities.Entity, id uint32, body []byt
 
 	var (
 		v interface {
-			Validate() error
 			IsValid() bool
 			GetID() uint32
 		}
@@ -273,8 +235,6 @@ func (app *Application) PostEntity(entity entities.Entity, id uint32, body []byt
 	if err != nil {
 		return http.StatusBadRequest
 	}
-
-	app.cache.Del([]byte(fmt.Sprintf("/%s/%d", entities.GetEntityRoute(entity), v.GetID())))
 
 	if app.heat != nil {
 		app.heat(entity, id)

@@ -15,6 +15,10 @@ func (db *DB) UpdateUser(v models.User) error {
 	if err != nil {
 		return err
 	}
+	v.JSON, err = v.MarshalJSON()
+	if err != nil {
+		return err
+	}
 
 	old := db.GetUser(v.ID)
 
@@ -39,7 +43,9 @@ func (db *DB) UpdateUser(v models.User) error {
 		}
 	}
 
-	db.users.Set(v.ID, v)
+	db.lockU.Lock(v.ID)
+	db.users[v.ID] = v
+	db.lockU.Unlock(v.ID)
 
 	return nil
 }
@@ -48,6 +54,10 @@ func (db *DB) UpdateLocation(v models.Location) error {
 
 	var err error
 	err = v.Validate()
+	if err != nil {
+		return err
+	}
+	v.JSON, err = v.MarshalJSON()
 	if err != nil {
 		return err
 	}
@@ -65,18 +75,25 @@ func (db *DB) UpdateLocation(v models.Location) error {
 		for i := range locationUsers {
 			uv := db.GetUserVisits(i)
 			uv.M.Lock()
-			for i := range uv.Visits {
-				if uv.Visits[i].Location == v.ID {
-					uv.Visits[i].Place = v.Place
-					uv.Visits[i].Country = v.Country
-					uv.Visits[i].Distance = v.Distance
+			for n, i := range uv.Visits {
+				if i.Location == v.ID {
+					i.Place = v.Place
+					i.Country = v.Country
+					i.Distance = v.Distance
+					i.JSON, err = i.MarshalJSON()
+					if err != nil {
+						log.Fatal("UserVisit MarshalJSON failed:", err)
+					}
+					uv.Visits[n] = i
 				}
 			}
 			uv.M.Unlock()
 		}
 	}
 
-	db.locations.Set(v.ID, v)
+	db.lockL.Lock(v.ID)
+	db.locations[v.ID] = v
+	db.lockL.Unlock(v.ID)
 
 	return nil
 }
@@ -85,6 +102,10 @@ func (db *DB) UpdateVisit(v models.Visit) error {
 
 	var err error
 	err = v.Validate()
+	if err != nil {
+		return err
+	}
+	v.JSON, err = v.MarshalJSON()
 	if err != nil {
 		return err
 	}
@@ -134,7 +155,7 @@ func (db *DB) UpdateVisit(v models.Visit) error {
 	uv.M.Lock()
 	for n, i := range uv.Visits {
 		if i.Visit == v.ID {
-			uv.Visits[n] = models.UserVisit{
+			visit := models.UserVisit{
 				Visit:     v.ID,
 				Location:  v.Location,
 				Mark:      v.Mark,
@@ -143,13 +164,20 @@ func (db *DB) UpdateVisit(v models.Visit) error {
 				Country:   location.Country,
 				Distance:  location.Distance,
 			}
+			visit.JSON, err = visit.MarshalJSON()
+			if err != nil {
+				log.Fatal("UserVisit MarshalJSON failed:", err)
+			}
+			uv.Visits[n] = visit
 			break
 		}
 	}
 	sort.Sort(models.UserVisitByVisitedAt(uv.Visits))
 	uv.M.Unlock()
 
-	db.visits.Set(v.ID, v)
+	db.lockV.Lock(v.ID)
+	db.visits[v.ID] = v
+	db.lockV.Unlock(v.ID)
 
 	return nil
 }
