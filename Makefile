@@ -36,8 +36,10 @@ DATA = full
 race: $(SOURCES) $(GENERATED)
 	go run -race $(TAGS) -ldflags=$(LDFLAGS) $(wildcard *.go) -b :8000 -data $(DATA)/data.zip $(ARGS)
 
+MEMORY = 4294967296
+
 run: docker
-	docker run -it --rm --net=host -v `realpath $(DATA)`:/tmp/data $(IMAGE)
+	docker run -it --rm -m=$(MEMORY) --net=host -v `realpath $(DATA)`:/tmp/data $(IMAGE)
 
 publish: docker
 	docker push $(IMAGE)

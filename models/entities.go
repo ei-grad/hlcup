@@ -60,10 +60,6 @@ func (v User) IsValid() bool {
 	return v.Valid
 }
 
-func (v *User) DumpTo(w Writer) {
-	w.Write(v.JSON)
-}
-
 // Location is Достопримечательность
 type Location struct {
 
@@ -109,10 +105,6 @@ func (v Location) IsValid() bool {
 	return v.Valid
 }
 
-func (v *Location) DumpTo(w Writer) {
-	w.Write(v.JSON)
-}
-
 // Visit is Посещение
 type Visit struct {
 
@@ -154,8 +146,4 @@ func (v *Visit) Validate() error {
 
 func (v Visit) IsValid() bool {
 	return v.Valid
-}
-
-func (v *Visit) DumpTo(w Writer) {
-	w.Write(v.JSON)
 }

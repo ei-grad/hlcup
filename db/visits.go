@@ -39,7 +39,6 @@ func (db *DB) AddVisitToIndex(v models.Visit) error {
 		Country:   location.Country,
 		Distance:  location.Distance,
 	}
-	uv.JSON, _ = uv.MarshalJSON()
 	db.GetUserVisits(v.User).Add(uv)
 
 	return nil

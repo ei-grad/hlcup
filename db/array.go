@@ -45,18 +45,27 @@ func New() *DB {
 var ErrAlreadyExists = errors.New("already exists")
 
 func (db *DB) GetUser(id uint32) models.User {
+	if id >= MaxUsers {
+		return models.User{}
+	}
 	db.lockU.RLock(id)
 	defer db.lockU.RUnlock(id)
 	return db.users[id]
 }
 
 func (db *DB) GetLocation(id uint32) models.Location {
+	if id >= MaxLocations {
+		return models.Location{}
+	}
 	db.lockL.RLock(id)
 	defer db.lockL.RUnlock(id)
 	return db.locations[id]
 }
 
 func (db *DB) GetVisit(id uint32) models.Visit {
+	if id >= MaxVisits {
+		return models.Visit{}
+	}
 	db.lockV.RLock(id)
 	defer db.lockV.RUnlock(id)
 	return db.visits[id]
@@ -66,7 +75,6 @@ func (db *DB) AddUser(v models.User) error {
 	if err := v.Validate(); err != nil {
 		return err
 	}
-	v.JSON, _ = v.MarshalJSON()
 	db.lockU.Lock(v.ID)
 	if db.users[v.ID].Valid {
 		return ErrAlreadyExists
@@ -80,7 +88,6 @@ func (db *DB) AddLocation(v models.Location) error {
 	if err := v.Validate(); err != nil {
 		return err
 	}
-	v.JSON, _ = v.MarshalJSON()
 	db.lockL.Lock(v.ID)
 	if db.locations[v.ID].Valid {
 		return ErrAlreadyExists
@@ -94,7 +101,6 @@ func (db *DB) AddVisit(v models.Visit) error {
 	if err := v.Validate(); err != nil {
 		return err
 	}
-	v.JSON, _ = v.MarshalJSON()
 	db.lockV.Lock(v.ID)
 	if db.visits[v.ID].Valid {
 		return ErrAlreadyExists

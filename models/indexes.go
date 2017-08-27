@@ -64,10 +64,6 @@ type UserVisit struct {
 	JSON      []byte `json:"-"`
 }
 
-func (v UserVisit) DumpTo(w Writer) {
-	w.Write(v.JSON)
-}
-
 // UserVisits is user visits index
 type UserVisits struct {
 	M      sync.RWMutex

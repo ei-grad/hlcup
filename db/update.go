@@ -15,10 +15,6 @@ func (db *DB) UpdateUser(v models.User) error {
 	if err != nil {
 		return err
 	}
-	v.JSON, err = v.MarshalJSON()
-	if err != nil {
-		return err
-	}
 
 	old := db.GetUser(v.ID)
 
@@ -57,10 +53,6 @@ func (db *DB) UpdateLocation(v models.Location) error {
 	if err != nil {
 		return err
 	}
-	v.JSON, err = v.MarshalJSON()
-	if err != nil {
-		return err
-	}
 
 	old := db.GetLocation(v.ID)
 
@@ -80,10 +72,6 @@ func (db *DB) UpdateLocation(v models.Location) error {
 					i.Place = v.Place
 					i.Country = v.Country
 					i.Distance = v.Distance
-					i.JSON, err = i.MarshalJSON()
-					if err != nil {
-						log.Fatal("UserVisit MarshalJSON failed:", err)
-					}
 					uv.Visits[n] = i
 				}
 			}
@@ -102,10 +90,6 @@ func (db *DB) UpdateVisit(v models.Visit) error {
 
 	var err error
 	err = v.Validate()
-	if err != nil {
-		return err
-	}
-	v.JSON, err = v.MarshalJSON()
 	if err != nil {
 		return err
 	}
@@ -163,10 +147,6 @@ func (db *DB) UpdateVisit(v models.Visit) error {
 				Place:     location.Place,
 				Country:   location.Country,
 				Distance:  location.Distance,
-			}
-			visit.JSON, err = visit.MarshalJSON()
-			if err != nil {
-				log.Fatal("UserVisit MarshalJSON failed:", err)
 			}
 			uv.Visits[n] = visit
 			break
