@@ -135,7 +135,8 @@ func (app *Application) RequestHandler(ctx *fasthttp.RequestCtx) {
 
 		// To fix the "Empty response" error in yandex-tank logs we have to send
 		// "Connection: close" for POST requests.
-		ctx.SetConnectionClose()
+		// Fixed in test system, see #52
+		//ctx.SetConnectionClose()
 
 		// Also, check system expects a {} in the response body
 		ctx.Write([]byte("{}"))

@@ -54,7 +54,7 @@ func main() {
 	}
 
 	if err := syscall.Mlockall(syscall.MCL_CURRENT | syscall.MCL_FUTURE); err != nil {
-		log.Fatal("mlockall:", err)
+		log.Print("mlockall: ", err)
 	}
 
 	// goroutine to load data and profile cpu and mem

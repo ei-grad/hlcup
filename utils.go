@@ -41,6 +41,8 @@ func whoami() {
 
 func top() {
 
+	time.Sleep(10 * time.Second)
+
 	var gracefulStop = make(chan os.Signal)
 
 	signal.Notify(gracefulStop, syscall.SIGTERM)
