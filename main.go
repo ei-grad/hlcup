@@ -33,6 +33,7 @@ func main() {
 
 	flag.Parse()
 
+	cpuinfo()
 	rlimit()
 	memstats()
 	whoami()
@@ -55,6 +56,8 @@ func main() {
 
 	if err := syscall.Mlockall(syscall.MCL_CURRENT | syscall.MCL_FUTURE); err != nil {
 		log.Print("mlockall: ", err)
+	} else {
+		log.Print("mlockall: success")
 	}
 
 	// goroutine to load data and profile cpu and mem

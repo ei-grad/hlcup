@@ -12,7 +12,7 @@ const (
 	MaxUsers           = 2000000
 	MaxLocations       = 1000000
 	MaxVisits          = MaxUsers * 10
-	DefaultShardsCount = 41 // it is a prime near 42
+	DefaultShardsCount = 509
 )
 
 type DB struct {

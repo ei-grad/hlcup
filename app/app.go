@@ -2,12 +2,8 @@ package app
 
 import (
 	"bytes"
-	"log"
 	"net/http"
-	"runtime"
-	"runtime/pprof"
 	"sync/atomic"
-	"time"
 
 	"github.com/valyala/fasthttp"
 
@@ -27,37 +23,6 @@ func NewApplication() *Application {
 	var app Application
 	app.db = db.New()
 	return &app
-}
-
-func (app *Application) RpsWatcher() {
-	for {
-		time.Sleep(1 * time.Second)
-		count := atomic.LoadInt32(&app.countRequests)
-		if count > 0 {
-			log.Printf("RPS: %6d", count)
-			atomic.SwapInt32(&app.countRequests, 0)
-		}
-	}
-}
-
-func handlePprof(ctx *fasthttp.RequestCtx, entity []byte) int {
-	if bytes.Equal(entity, []byte("pprof")) {
-		if err := pprof.StartCPUProfile(ctx); err != nil {
-			log.Print("could not start CPU profile: ", err)
-			return http.StatusInternalServerError
-		}
-		time.Sleep(600 * time.Second)
-		pprof.StopCPUProfile()
-		return http.StatusOK
-	}
-	if bytes.Equal(entity, []byte("pprof_mem")) {
-		runtime.GC() // get up-to-date statistics
-		if err := pprof.WriteHeapProfile(ctx); err != nil {
-			log.Fatal("could not write memory profile: ", err)
-		}
-		return http.StatusOK
-	}
-	return http.StatusNotFound
 }
 
 // RequestHandler contains routing implementation
@@ -80,12 +45,12 @@ func (app *Application) RequestHandler(ctx *fasthttp.RequestCtx) {
 	case "GET":
 		var entityEnd = 1
 		for ; entityEnd < len(path); entityEnd++ {
-			if path[entityEnd] == '/' {
+			if path[entityEnd] == '/' || path[entityEnd] == '?' {
 				break
 			}
 		}
 		entity := path[1:entityEnd]
-		if entityEnd < len(path) {
+		if entityEnd < len(path) && path[entityEnd] != '?' {
 			var idEnd = entityEnd + 1
 			for ; idEnd < len(path); idEnd++ {
 				if path[idEnd] == '/' {
@@ -128,7 +93,7 @@ func (app *Application) RequestHandler(ctx *fasthttp.RequestCtx) {
 			}
 		} else {
 			// /pprof
-			status = handlePprof(ctx, entity)
+			status = GetPprof(ctx, entity)
 			break
 		}
 	case "POST":

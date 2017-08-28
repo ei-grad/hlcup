@@ -2,16 +2,16 @@ FROM golang:1.9
 EXPOSE 80
 WORKDIR /go/src/github.com/ei-grad/hlcup
 
-RUN curl https://glide.sh/get | sh
+RUN go get -u github.com/golang/dep/cmd/dep
 
-ADD glide.lock glide.yaml ./
+ADD Gopkg.toml Gopkg.lock ./
 
-RUN glide install
+RUN dep ensure -vendor-only
 
+#CMD taskset -c 0 /go/bin/hlcup
 CMD nice -20 /go/bin/hlcup
 ENV RUN_TOP 1
 #ENV GOMAXPROCS 1
-#CMD taskset -c 0 /go/bin/hlcup
 
 ADD . .
 

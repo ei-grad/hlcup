@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/shirou/gopsutil/cpu"
 	"log"
 	"os"
 	"os/exec"
@@ -61,4 +62,15 @@ func top() {
 
 	os.Exit(0)
 
+}
+
+func cpuinfo() {
+	info, err := cpu.Info()
+	if err != nil {
+		log.Print("can't get cpu information: ", err)
+		return
+	}
+	for n, i := range info {
+		log.Printf("Cpu#%d: %s", n, i)
+	}
 }

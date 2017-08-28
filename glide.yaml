@@ -1,8 +1,0 @@
-package: github.com/ei-grad/hlcup
-import:
-- package: github.com/coocood/freecache
-- package: github.com/golang/groupcache
-  subpackages:
-  - singleflight
-- package: github.com/valyala/fasthttp
-- package: github.com/valyala/tcplisten

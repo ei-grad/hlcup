@@ -6,3 +6,4 @@ Dockerfile
 Makefile
 docker
 vendor
+.git
