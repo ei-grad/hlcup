@@ -27,7 +27,7 @@ type LocationMarkFilter func(models.LocationMark) bool
 //     toAge - как предыдущее, но наоборот
 //     gender - учитывать оценки только мужчин или женщин
 //
-func GetMarksFilter(args Peeker) (ret LocationMarkFilter, err error) {
+func (app *Application) GetMarksFilter(args Peeker) (ret LocationMarkFilter, err error) {
 
 	var filters []LocationMarkFilter
 
@@ -55,7 +55,7 @@ func GetMarksFilter(args Peeker) (ret LocationMarkFilter, err error) {
 		if err != nil {
 			return nil, fmt.Errorf("invalid fromAge: %s", err)
 		}
-		t := time.Now()
+		t := app.now
 		t = time.Date(t.Year()-int(fromAge), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
 		filters = append(filters, filterLocationMarkFromAge(t))
 	}
@@ -66,7 +66,7 @@ func GetMarksFilter(args Peeker) (ret LocationMarkFilter, err error) {
 		if err != nil {
 			return nil, fmt.Errorf("invalid toAge: %s", err)
 		}
-		t := time.Now()
+		t := app.now
 		t = time.Date(t.Year()-int(toAge), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
 		filters = append(filters, filterLocationMarkToAge(t))
 	}

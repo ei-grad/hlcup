@@ -39,7 +39,7 @@ race: $(SOURCES) $(GENERATED)
 MEMORY = 4294967296
 
 run: docker
-	docker run -it --rm -m=$(MEMORY) --net=host -v `realpath $(DATA)`:/tmp/data $(IMAGE)
+	docker run -it --rm -m=$(MEMORY) --ulimit memlock=$(MEMORY):$(MEMORY) --net=host -v `realpath $(DATA)`:/tmp/data $(IMAGE)
 
 publish: docker
 	docker push $(IMAGE)

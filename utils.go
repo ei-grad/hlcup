@@ -26,6 +26,8 @@ func memstats() {
 	}()
 }
 
+const RLIMIT_MEMLOCK = 8 // nolint
+
 func rlimit() {
 	var rLimit syscall.Rlimit
 	err := syscall.Getrlimit(syscall.RLIMIT_NOFILE, &rLimit)
@@ -33,6 +35,11 @@ func rlimit() {
 		log.Fatal("error getting RLIMIT_NOFILE: ", err)
 	}
 	log.Printf("NOFILE: %+v", rLimit)
+	err = syscall.Getrlimit(RLIMIT_MEMLOCK, &rLimit)
+	if err != nil {
+		log.Fatal("error getting RLIMIT_MEMLOCK: ", err)
+	}
+	log.Printf("MEMLOCK: %+v", rLimit)
 }
 
 func whoami() {
@@ -42,14 +49,14 @@ func whoami() {
 
 func top() {
 
-	time.Sleep(10 * time.Second)
+	time.Sleep(30 * time.Second)
 
 	var gracefulStop = make(chan os.Signal)
 
 	signal.Notify(gracefulStop, syscall.SIGTERM)
 	signal.Notify(gracefulStop, syscall.SIGINT)
 
-	cmd := exec.Command("top", "-b", "-d10")
+	cmd := exec.Command("top", "-b", "-d30")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Start()
@@ -70,7 +77,14 @@ func cpuinfo() {
 		log.Print("can't get cpu information: ", err)
 		return
 	}
-	for n, i := range info {
-		log.Printf("Cpu#%d: %s", n, i)
-	}
+	log.Printf("Running on %s %.1fMhz", info[0].ModelName, info[0].Mhz)
+}
+
+func swapon() {
+	log.Print("# swapon -s:")
+	cmd := exec.Command("swapon", "-s")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Start()
+	cmd.Wait()
 }

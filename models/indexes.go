@@ -40,7 +40,7 @@ func (lm *LocationMarks) Pop(visitID uint32) (LocationMark, bool) {
 	defer lm.M.Unlock()
 	for n, i := range lm.Marks {
 		if i.Visit == visitID {
-			lm.Marks = append(lm.Marks[:n], lm.Marks[n+1:]...)
+			lm.Marks = lm.Marks[:n+copy(lm.Marks[n:], lm.Marks[n+1:])]
 			return i, true
 		}
 	}
@@ -61,7 +61,6 @@ type UserVisit struct {
 	Location  uint32 `json:"-"`
 	Distance  uint32 `json:"-"`
 	Mark      uint8  `json:"mark"`
-	JSON      []byte `json:"-"`
 }
 
 // UserVisits is user visits index
@@ -99,7 +98,7 @@ func (uv *UserVisits) Pop(visitID uint32) (UserVisit, bool) {
 	defer uv.M.Unlock()
 	for n, i := range uv.Visits {
 		if i.Visit == visitID {
-			uv.Visits = append(uv.Visits[:n], uv.Visits[n+1:]...)
+			uv.Visits = uv.Visits[:n+copy(uv.Visits[n:], uv.Visits[n+1:])]
 			return i, true
 		}
 	}

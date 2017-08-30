@@ -6,4 +6,5 @@ Dockerfile
 Makefile
 docker
 vendor
+hlcup
 .git

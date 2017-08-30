@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"net/http"
 	"sync/atomic"
+	"time"
 
 	"github.com/valyala/fasthttp"
 
@@ -14,6 +15,7 @@ import (
 // Application implements application logic
 type Application struct {
 	db            *db.DB
+	now           time.Time
 	countRequests int32
 	heat          func(entities.Entity, uint32)
 }

@@ -9,19 +9,19 @@ import (
 const Version = "array"
 
 const (
-	MaxUsers           = 2000000
-	MaxLocations       = 1000000
-	MaxVisits          = MaxUsers * 10
+	MaxUsers           = 1500000
+	MaxLocations       = 1100000
+	MaxVisits          = 15000000
 	DefaultShardsCount = 509
 )
 
 type DB struct {
-	users     [MaxUsers]models.User
-	locations [MaxLocations]models.Location
-	visits    [MaxVisits]models.Visit
+	users     []models.User
+	locations []models.Location
+	visits    []models.Visit
 
-	locationMarks [MaxLocations]*models.LocationMarks
-	userVisits    [MaxUsers]*models.UserVisits
+	locationMarks []*models.LocationMarks
+	userVisits    []*models.UserVisits
 
 	lockU *ShardedLock
 	lockL *ShardedLock
@@ -32,14 +32,23 @@ type DB struct {
 }
 
 func New() *DB {
-	return &DB{
-		lockU: NewShardedLock(DefaultShardsCount),
-		lockL: NewShardedLock(DefaultShardsCount),
-		lockV: NewShardedLock(DefaultShardsCount),
 
-		lockLM: NewShardedLock(DefaultShardsCount),
-		lockUV: NewShardedLock(DefaultShardsCount),
-	}
+	db := new(DB)
+
+	db.users = make([]models.User, MaxUsers)
+	db.locations = make([]models.Location, MaxLocations)
+	db.visits = make([]models.Visit, MaxVisits)
+
+	db.locationMarks = make([]*models.LocationMarks, MaxLocations)
+	db.userVisits = make([]*models.UserVisits, MaxUsers)
+
+	db.lockU = NewShardedLock(DefaultShardsCount)
+	db.lockL = NewShardedLock(DefaultShardsCount)
+	db.lockV = NewShardedLock(DefaultShardsCount)
+	db.lockLM = NewShardedLock(DefaultShardsCount)
+	db.lockUV = NewShardedLock(DefaultShardsCount)
+
+	return db
 }
 
 var ErrAlreadyExists = errors.New("already exists")
@@ -76,7 +85,7 @@ func (db *DB) AddUser(v models.User) error {
 		return err
 	}
 	db.lockU.Lock(v.ID)
-	if db.users[v.ID].Valid {
+	if db.users[v.ID].IsValid() {
 		return ErrAlreadyExists
 	}
 	db.users[v.ID] = v
@@ -89,7 +98,7 @@ func (db *DB) AddLocation(v models.Location) error {
 		return err
 	}
 	db.lockL.Lock(v.ID)
-	if db.locations[v.ID].Valid {
+	if db.locations[v.ID].IsValid() {
 		return ErrAlreadyExists
 	}
 	db.locations[v.ID] = v
@@ -102,7 +111,7 @@ func (db *DB) AddVisit(v models.Visit) error {
 		return err
 	}
 	db.lockV.Lock(v.ID)
-	if db.visits[v.ID].Valid {
+	if db.visits[v.ID].IsValid() {
 		return ErrAlreadyExists
 	}
 	db.visits[v.ID] = v

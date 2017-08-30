@@ -10,12 +10,12 @@ import (
 func (db *DB) AddVisitToIndex(v models.Visit) error {
 
 	location := db.GetLocation(v.Location)
-	if !location.Valid {
+	if !location.IsValid() {
 		return fmt.Errorf("location with id %d doesn't exist", v.Location)
 	}
 
 	user := db.GetUser(v.User)
-	if !user.Valid {
+	if !user.IsValid() {
 		return fmt.Errorf("user with id %d doesn't exist", v.User)
 	}
 

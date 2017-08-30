@@ -34,6 +34,7 @@ func main() {
 	flag.Parse()
 
 	cpuinfo()
+	swapon()
 	rlimit()
 	memstats()
 	whoami()

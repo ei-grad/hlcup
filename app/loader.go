@@ -35,6 +35,8 @@ func (app *Application) LoadData(fileName string) {
 
 	var c counts
 
+	app.now = r.File[0].ModTime()
+
 	for _, f := range r.File {
 		wg.Add(1)
 		go app.loadFile(&wg, f, &c, 1)
@@ -153,8 +155,6 @@ func (app *Application) loadFile(wg *sync.WaitGroup, f *zip.File, c *counts, sta
 		default:
 			log.Fatalf("loader: unknown section: %s", key)
 		}
-
-		log.Printf("loader: %s: loading %s", f.Name, key)
 
 		for decoder.More() {
 			handler()

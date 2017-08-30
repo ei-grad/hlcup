@@ -98,7 +98,7 @@ func (app *Application) GetLocationAvg(w io.Writer, id uint32, args Peeker) int 
 		return http.StatusNotFound
 	}
 
-	filter, err := GetMarksFilter(args)
+	filter, err := app.GetMarksFilter(args)
 	if err != nil {
 		return http.StatusBadRequest
 	}
